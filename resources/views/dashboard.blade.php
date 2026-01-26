@@ -15,7 +15,7 @@
 @include('layouts.navbar')
 
 <body class="bg-gray-50 font-sans">
-    <div class="ml-[175px] mt-10 p-6">
+    <div class="ml-[175px] mt-14 p-6">
         <!-- Stat Cards Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <!-- Card 1: Transaksi Hari Ini -->
