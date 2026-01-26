@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | Sistem Inventory dan Kasir</title>
     @vite(['resources/css/app.css'])
-    <!-- Link CDN untuk Bootstrap Icons -->
+    <!-- Link CDN untuk Bootstrap Icons Doni -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Menambahkan Chart.js untuk grafik -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
