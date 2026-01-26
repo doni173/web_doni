@@ -1,0 +1,1157 @@
+/* Styling untuk Halaman Login */
+body {
+   font-family: 'Open Sans', sans-serif;
+    background-color: #d6ebff;
+    margin: 0;
+    padding: 0;
+}
+
+/* Styling untuk Halaman Login */
+body.login {
+    font-family: 'Open Sans', sans-serif;
+    background: #d6ebff; /* Latar belakang warna abu-abu muda */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.login-container {
+    background-color: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 100%;
+    max-width: 305px;
+}
+
+/* Styling untuk Heading Login */
+.login-container h1 {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 20px;
+    margin-bottom: 5px;
+    color: #333;
+    font-weight: bold;
+}
+
+/* Styling untuk DTC Multimedia */
+.login-dtc-multimedia {
+    font-size: 14px;
+    font-weight: bold;
+    color: #696669;
+    margin-bottom: 20px;
+    margin-top: 1px;
+}
+
+/* Styling untuk Input Field */
+.login-container input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    border: 2px solid #ddd;
+    font-size: 15px;
+    outline: none;
+    box-sizing: border-box;
+}
+
+/* Styling untuk Tombol Submit */
+.login-container input[type="submit"] {
+    background-color: #4198fb;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: bold;
+    padding: 12px;
+    border-radius: 8px;
+    width: 100%;
+    transition: background-color 0.3s ease;
+}
+
+.login-container input[type="submit"]:hover {
+    background-color: #3578c4;
+}
+
+/* Styling untuk Pesan Error */
+.login-container .error {
+    color: red;
+    margin-top: 5px;
+    font-size: 14px;
+}
+
+.error ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.error li {
+    color: red;
+    font-size: 14px;
+    background-color: #f8d7da;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #f5c6cb;
+}
+
+/* Navbar Container */
+.navbar-container {
+    font-family: 'Open Sans', sans-serif;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #4198fb;  /* Warna latar belakang navbar */
+    padding: 0 10px;  /* Rapat ke sisi kiri dan kanan */
+    position: fixed;
+    top: 10px;
+    left: 190px;
+    right: 15px;
+    z-index: 1000;  /* Menjaga agar navbar tetap berada di atas */
+    height: 60px; /* Menentukan tinggi navbar */
+    border-radius: 12px;
+}
+.navbar-container h2 {
+    margin: 10px;
+    font-size: 12px;
+    color: #fff;  /* Warna teks untuk judul */
+    cursor: pointer;
+}
+
+.logout {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    padding: 2px;  /* Rapat ke sisi kiri */
+}
+
+.logout:hover {
+    background-color: #3578c4;
+    border-radius: 5px;
+    padding: 2px; /* Rapat ke sisi kiri */
+    transform: scale(1.1); 
+}
+
+/* Styling untuk Tombol Sidebar */
+.sidebar {
+    background-color: #4198fb;
+    width: 130px;
+    height: 91vh;
+    color: white;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    transition: transform 0.3s ease;
+    border-radius: 12px;
+}
+
+.sidebar .user-info {
+    text-align: center;
+    font-family: 'Open Sans', sans-serif;
+    border-bottom: 2px solid #ddd;  /* Menambahkan garis tipis */
+}
+
+.sidebar .user-info img {
+    border-radius: 30%;
+    width: 60px;
+    height: 60px;
+}
+
+.sidebar .user-info p {
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.sidebar nav ul {
+    padding: 0;
+    list-style: none;
+    font-family: 'Open Sans', sans-serif;
+}
+
+.sidebar nav ul li {
+    margin-bottom: 5px;
+}
+
+.sidebar nav ul li a {
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    display: block;
+    padding: 5px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease, padding 0.3s ease;
+    
+}
+
+.sidebar nav ul li a:hover {
+    background-color: #3578c4;
+    padding-left: 5px;
+    transform: scale(1.1); 
+}
+
+.sidebar nav ul li a i {
+    margin-right: 7px; /* Memberikan jarak antara ikon dan teks */
+}
+
+
+.container {
+    font-family: 'Open Sans', sans-serif;
+    min-height: 100vh;
+    flex-direction: row;
+    margin-left: 175px; /* Menyesuaikan margin kiri untuk menghindari sidebar */
+    margin-top: 40px; /* Memberikan jarak dari navbar */
+    padding: 20px;
+    gap: 20px; /* Memberikan jarak antar elemen */  
+}
+
+/* Stat Cards */
+.stat-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.stat-card {
+    margin-bottom: 15px;
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 60px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    color: #333;
+    justify-content: center; /* Memusatkan teks secara vertikal */
+    align-items: center; /* Memusatkan teks secara horizontal */
+}
+
+.stat-card h3 {
+    font-family: 'Roboto', sans-serif;
+    font-size: 17px;
+    font-weight: bold;
+    margin-top: 0px;
+}
+
+.stat-card p {
+    font-family: 'Roboto', sans-serif;
+    font-size: 20px;
+    margin-top: 0px;
+}
+
+.grafik-penjualan {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
+    margin-bottom: 15px;
+    padding: 150px
+}
+
+.grafik-penjualan h3 {
+    font-family: 'Roboto', sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.promo-diskon {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.promo-diskon h3 {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.promo-diskon table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.promo-diskon th, .promo-diskon td {
+    padding: 1px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+.promo-diskon th {
+    background-color: #f4f4f4;
+}
+
+.promo-diskon tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.main-content {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
+    margin-top: 25px; 
+    padding: 20px;
+    gap: 20px; 
+}
+
+.main-content h2 {
+    margin-top: 1px; 
+    font-family: 'Open Sans', sans-serif;
+    margin-bottom: 20px;
+}
+
+.buttons {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.form-control {
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    padding: 8px;
+    width: 100%;
+    max-width: 250px; 
+    box-sizing: border-box;
+}
+
+.form-control:focus {
+    border-color: #4198fb;
+    outline: none;
+}
+
+.btn-src {
+    background-color: #4198fb;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 10px;
+    border-radius: 8px;
+    width: 8%;
+    transition: background-color 0.3s ease;
+    margin-left: 10px;
+}
+
+.btn-src:hover {
+    background-color: #3578c4;
+}
+
+.btn-src1 {
+    background-color: #4198fb;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 10px;
+    border-radius: 8px;
+    width: 14%;
+    transition: background-color 0.3s ease;
+    margin-left: 10px;
+    margin-bottom:5px
+}
+
+.btn-src1:hover {
+    background-color: #3578c4;
+}
+
+.btn-add {
+    background-color: #268b3e;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 10px;
+    border-radius: 8px;
+    width: 8%;
+    transition: background-color 0.3s ease;
+    margin-left: 785px;
+}
+
+.btn-add:hover {
+    background-color: #28a745; /* Efek hover untuk tombol */
+}
+
+.table-main {
+    width: 100%;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    border-collapse: collapse; /* Menghapus jarak antar sel */
+}
+
+.table-main th,
+.table-main td {
+    padding: 3px 1px; /* Menambah padding agar elemen lebih rapi */
+    text-align: center;
+    font-size: 13px;
+}
+
+.table-main th {
+    background-color: #4198fb; /* Warna biru terang untuk header */
+    color: white;
+    border-bottom: 2px solid #1f76c1; /* Menambah garis batas bawah yang jelas */
+}
+
+.table-main td {
+    background-color: #f4f4f4; /* Warna latar belakang lebih terang untuk sel */
+    color: #333; /* Teks berwarna gelap agar kontras dengan latar */
+    border-bottom: 1px solid #ddd; /* Garis batas tipis antar sel */
+}
+
+.table-main tr:hover {
+    background-color: #e6f0f7; /* Efek hover yang memberi highlight pada baris */
+}
+
+.table-main button {
+    padding: 3px 8px;
+    font-size: 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.table-main button.edit {
+    background-color: #00bcd4; /* Warna tombol Edit */
+    color: white;
+}
+
+.table-main button.delete {
+    background-color: #f44336; /* Warna tombol Hapus */
+    color: white;
+}
+
+.table-main button:hover {
+    opacity: 0.8; /* Memberikan efek transparansi saat tombol dihover */
+}
+
+.table-main td button {
+    margin: 2px;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;   
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    padding-top: 100px;
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 400px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-top : 1px
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+}
+
+.modal-header h2 {
+    font-size: 20px;
+    margin: 0;
+}
+
+.close {
+    font-size: 20px;
+    font-weight: bold;
+    color: #aaa;
+    cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+}
+
+.modal-body {
+    padding: 10px;
+}
+
+.modal-body .form-group {
+    margin-bottom: 20px;
+    margin-top: 5px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* --------------------- Desain Form Login --------------------- */
+
+/* --------------------- Desain Form Umum --------------------- */
+
+
+
+
+
+
+
+
+
+
+/* Styling Tabel */
+.table {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 30px;
+    width: 100%;
+}
+
+.table th, .table td {
+    padding: 4px; /* Mengurangi padding untuk memperkecil ukuran */
+    padding: 8px;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 12px; /* Mengatur ukuran font lebih kecil */
+}
+
+.table th {
+    background-color: #007bff;
+    color: white;
+}
+
+.table td {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+
+.table tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Tombol */
+.btn-info, .btn-success, .btn-danger {
+    padding: 8px 16px;
+    font-size: 10px;
+    border-radius: 5px;
+}
+
+.btn-info {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+}
+
+.btn-info:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+}
+
+.btn-success {
+    background-color: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Styling untuk Logo */
+.login-logo {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.login-logo-img {
+    width: 100px;
+    height: auto;
+}
+
+.login-input-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 10px; /* Memberikan jarak antara input dan tombol */
+}
+
+/* --------------------- CSS untuk Dashboard --------------------- */
+
+/* Styling untuk Halaman Dashboard */
+body.dashboard {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f3f4f6;
+}
+
+
+
+
+/* Styling untuk Konten Utama (Dashboard) */
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: row;
+    margin-left: 210px; /* Menyesuaikan margin kiri untuk menghindari sidebar */
+    margin-top: 70px; /* Memberikan jarak dari navbar */
+    padding: 20px;
+    gap: 10px; /* Memberikan jarak antar elemen */
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.dashboard-header h1 {
+    font-size: 24px;
+    color: #333;
+    font-weight: bold;
+}
+
+.dashboard-dtc-multimedia {
+    font-size: 16px;
+    color: #6a11cb;
+}
+
+
+
+
+
+
+
+
+
+
+/* Styling untuk Dashboard Container */
+.dashboard-container {
+    background-color: #f9f9f9;  /* Latar belakang yang ringan untuk keseluruhan halaman */
+    padding: 20px;
+    margin-top: 70px;
+}
+
+
+
+
+/* Styling untuk Kotak Tabel */
+.category-table-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    overflow-x: auto;  /* Agar tabel bisa scroll horizontal jika terlalu lebar */
+}
+
+/* Styling untuk Tabel */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+/* Styling untuk Header Tabel */
+thead {
+    background-color: #888870;
+    color: white;
+}
+
+thead th {
+    padding: 12px;
+    text-align: left;
+    font-size: 18px;
+}
+
+/* Styling untuk Sel Tabel */
+tbody td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Styling untuk Tautan Aksi (Edit dan Hapus) */
+a {
+    color: #4CAF50;
+    text-decoration: none;
+    font-size: 14px;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+a:hover {
+    background-color: #f1f1f1;
+}
+
+/* Styling untuk baris terakhir tabel agar tidak memiliki border bawah */
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+
+
+/* Styling untuk form pencarian */
+.input-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 10px; /* Memberikan jarak antara input dan tombol */
+}
+
+.input-group input {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 200px;  /* Mengatur lebar input pencarian */
+    box-sizing: border-box;
+}
+
+.input-group button {
+    padding: 10px 15px;
+    font-size: 16px;
+    background-color: #888870;  /* Warna coklat sesuai dengan warna tabel */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Hover Effect pada Tombol Cari */
+.input-group button:hover {
+    background-color: #e59a59;  /* Warna saat hover */
+}
+
+/* Menempatkan Tombol "Tambah Data" di sebelah kanan */
+.add-button-container {
+    display: flex;
+    justify-content: flex-end;  /* Tombol tambah data berada di kanan */
+}
+
+
+
+/* Styling untuk Kotak Tabel */
+.category-table-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    overflow-x: auto;  /* Agar tabel bisa scroll horizontal jika terlalu lebar */
+}
+
+/* Styling untuk Tabel */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+/* Styling untuk Header Tabel */
+thead {
+    background-color: #888870;
+    color: white;
+}
+
+thead th {
+    padding: 12px;
+    text-align: left;
+    font-size: 18px;
+}
+
+/* Styling untuk Sel Tabel */
+tbody td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Styling untuk Tautan Aksi (Edit dan Hapus) */
+a {
+    color: #4CAF50;
+    text-decoration: none;
+    font-size: 14px;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+a:hover {
+    background-color: #f1f1f1;
+}
+
+/* Styling untuk baris terakhir tabel agar tidak memiliki border bawah */
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+
+
+.modal-content {
+    margin-left: 220px; /* Menyesuaikan margin kiri untuk menghindari sidebar */
+    border-radius: 10px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* --------------------- Desain Form Login --------------------- */
+
+
+/* Styling untuk Login Container */
+.login-container {
+    background-color: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 100%;
+    max-width: 305px;
+}
+
+
+
+/* Styling untuk Logo */
+.login-logo {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.login-logo-img {
+    width: 100px;
+    height: auto;
+}
+
+
+/* --------------------- CSS untuk Dashboard --------------------- */
+
+/* Styling untuk Halaman Dashboard */
+body.dashboard {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f3f4f6;
+}
+
+
+/* Styling untuk Judul dan DTC Multimedia */
+
+
+/* Hamburger Button */
+.hamburger {
+   
+    background: none;
+    border: none;
+    font-size: 30px;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    padding: 0 10px;  /* Rapat ke sisi kiri dan kanan */
+    
+}
+
+.hamburger:hover {
+    background-color: #e59a59;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.hamburger i {
+    font-size: 30px;
+    color: white;
+}
+
+
+
+
+
+
+
+
+
+
+/* Styling untuk Dashboard Container */
+.dashboard-container {
+    background-color: #f9f9f9;  /* Latar belakang yang ringan untuk keseluruhan halaman */
+    padding: 20px;
+    margin-top: 70px;
+}
+
+
+
+
+
+/* Styling untuk Kotak Tabel */
+.category-table-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    overflow-x: auto;  /* Agar tabel bisa scroll horizontal jika terlalu lebar */
+}
+
+/* Styling untuk Tabel */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+/* Styling untuk Header Tabel */
+thead {
+    background-color: #888870;
+    color: white;
+}
+
+thead th {
+    padding: 12px;
+    text-align: left;
+    font-size: 18px;
+}
+
+/* Styling untuk Sel Tabel */
+tbody td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Styling untuk Tautan Aksi (Edit dan Hapus) */
+a {
+    color: #4CAF50;
+    text-decoration: none;
+    font-size: 14px;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+a:hover {
+    background-color: #f1f1f1;
+}
+
+/* Styling untuk baris terakhir tabel agar tidak memiliki border bawah */
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Responsive Design untuk Tampilan Mobile */
+/* @media screen and (max-width: 768px) {
+    .container {
+        width: 95%;
+    }
+
+    table {
+        font-size: 14px;
+    }
+
+    .btn-add {
+        font-size: 14px;
+        padding: 8px 15px;
+    }
+} */
+
+/* Styling untuk form pencarian */
+.input-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 10px; /* Memberikan jarak antara input dan tombol */
+}
+
+.input-group input {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 250px;  /* Mengatur lebar input pencarian */
+    box-sizing: border-box;
+}
+
+.input-group button {
+    padding: 10px 15px;
+    font-size: 16px;
+    background-color: #888870;  /* Warna coklat sesuai dengan warna tabel */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Hover Effect pada Tombol Cari */
+.input-group button:hover {
+    background-color: #e59a59;  /* Warna saat hover */
+}
+
+/* Menempatkan Tombol "Tambah Data" di sebelah kanan */
+.add-button-container {
+    display: flex;
+    justify-content: flex-end;  /* Tombol tambah data berada di kanan */
+}
+
+/* Styling untuk Tombol Tambah Data */
+
+/* Styling untuk Kotak Tabel */
+.category-table-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    overflow-x: auto;  /* Agar tabel bisa scroll horizontal jika terlalu lebar */
+}
+
+/* Styling untuk Tabel */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+/* Styling untuk Header Tabel */
+thead {
+    background-color: #888870;
+    color: white;
+}
+
+thead th {
+    padding: 12px;
+    text-align: left;
+    font-size: 18px;
+}
+
+/* Styling untuk Sel Tabel */
+tbody td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Styling untuk Tautan Aksi (Edit dan Hapus) */
+a {
+    color: #4CAF50;
+    text-decoration: none;
+    font-size: 14px;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+a:hover {
+    background-color: #f1f1f1;
+}
+
+/* Styling untuk baris terakhir tabel agar tidak memiliki border bawah */
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+
+
+
+
+
+
+
+
+
+
