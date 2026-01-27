@@ -1,8 +1,8 @@
 @yield('content')
 
 <div class="navbar-container">
-    <h2>Sistem Inventory dan Kasir<br>DTC MULTIMEDIA</h2>
-    
+    <h2>Sistem Inventory dan Kasir<br>DTC MULTIMEDIA<h2>
+
     <!-- Logout Form -->
      <div class="logout">
         <form action="{{ route('logout') }}" method="POST" style="display:inline;">
