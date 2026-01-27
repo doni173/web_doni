@@ -154,6 +154,13 @@ body.login {
     border-radius: 12px;
 }
 
+.sidebar-section {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 10px;
+    margin-top : 15px;
+    margin-bottom: 8px;
+}
+
 .sidebar .user-info {
     text-align: center;
     font-family: 'Open Sans', sans-serif;
