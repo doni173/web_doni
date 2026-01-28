@@ -13,7 +13,29 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\StockReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\PurchaseController;
 use Illuminate\Support\Facades\Auth;
+
+
+
+Route::middleware(['auth'])->group(function () {
+    
+    // Route untuk halaman pembelian (form input)
+    Route::get('/purchase', [PurchaseController::class, 'index'])->name('purchase.index');
+    
+    // Route untuk menyimpan transaksi pembelian
+    Route::post('/purchase', [PurchaseController::class, 'store'])->name('purchase.store');
+    
+    // Route untuk melihat detail pembelian
+    Route::get('/purchase/{id}', [PurchaseController::class, 'show'])->name('purchase.show');
+    
+    // Route untuk melihat history/riwayat pembelian
+    Route::get('/purchase-history', [PurchaseController::class, 'history'])->name('purchase.history');
+    
+    // Route untuk menghapus transaksi pembelian
+    Route::delete('/purchase/{id}', [PurchaseController::class, 'destroy'])->name('purchase.destroy');
+    
+});
 
 Route::get('/report', [SaleController::class, 'report'])->name('sale.report');
 

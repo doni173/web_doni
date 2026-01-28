@@ -30,7 +30,7 @@
             <!-- Transaksi Section -->
             <div class="sidebar-section"><li>Transaksi</li></div>
             <ul>
-                <li><a href="#"><i class="bi bi-cart-check"></i>Beli</a></li> <!-- Placeholder for route -->
+                <li><a href="{{ route('purchase.index') }}"><i class="bi bi-cart-check"></i>Beli</a></li> <!-- Placeholder for route -->
                 <li><a href="{{ route('sale.index') }}"><i class="bi bi-cart-fill"></i>Jual</a></li>
             </ul>
 

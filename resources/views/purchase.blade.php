@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Beli | Sistem Inventory dan Kasir</title>
+    <title>Pembelian | Sistem Inventory dan Kasir</title>
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
 </head>
 
@@ -15,12 +15,14 @@
     <div class="container-daftar">
         <div class="">
             <div class="padding">
-            <h2>Pembelian</h2>
+            <h2>Transaksi Pembelian</h2>
             </div>
         </div>  
-            <!-- Daftar Barang -->
+        <!-- Wrapper untuk tabel Daftar Barang -->
+        <div class="table-wrapper">
+            <!-- Daftar Barang untuk Pembelian -->
             <div class="table-container">
-                <form action="{{ route('sale.index') }}" method="GET" class="search-form">
+                <form action="{{ route('purchase.index') }}" method="GET" class="search-form">
                     <input type="text" class="form-control" placeholder="Cari barang..." name="q_barang" value="{{ request('q_barang') }}" style="width: 300px;">
                     <button type="submit" class="btn-src1">Search</button>
                 </form>
@@ -28,7 +30,7 @@
                     <thead>
                         <tr>
                             <th>Produk</th>
-                            <th>Harga</th>
+                            <th>Harga Beli</th>
                             <th>Jumlah</th>
                             <th>Aksi</th>
                         </tr>
@@ -37,16 +39,15 @@
                         @foreach($items as $item)
                         <tr>
                             <td>{{ $item->nama_produk }}</td>
-                            <td>{{ number_format($item->harga_setelah_diskon, 0, ',', '.') }}</td>
+                            <td>{{ number_format($item->harga_beli, 0, ',', '.') }}</td>
                             <td>
-                                <input type="number" name="qty" class="form-control qty" data-id="{{ $item->id_produk }}" value="1" min="1" max="100">
+                                <input type="number" name="qty" class="form-control qty" data-id="{{ $item->id_produk }}" value="1" min="1" max="1000">
                             </td>
                             <td>
                                 <button type="button" class="btn btn-success add-item" 
                                     data-id="{{ $item->id_produk }}" 
                                     data-name="{{ $item->nama_produk }}" 
-                                    data-price="{{ $item->harga_jual }}" 
-                                    data-discount="{{ $item->diskon }}"
+                                    data-price="{{ $item->harga_beli }}"
                                     data-type="produk">Tambah</button>
                             </td>
                         </tr>
@@ -54,18 +55,17 @@
                     </tbody>
                 </table>
             </div>
-
-            
+        </div>
+    </div>
+</div>
 
 <div class="container-ringkasan"> 
     <table class="table-main" id="summary-table">
         <thead>
             <tr>
-                <th>Produk / Service</th>
-                <th>Harga</th>
+                <th>Produk</th>
+                <th>Harga Beli</th>
                 <th>Jumlah</th>
-                <th>Diskon</th>
-                <th>Harga Setelah Diskon</th>
                 <th>Total Harga</th>
                 <th>Aksi</th>
             </tr>
@@ -77,33 +77,39 @@
 </div>
 
 <div class="container-bayar">
-    <form id="sale-form">
+    <form id="purchase-form">
         @csrf
         <div class="form-wrapper">     
             <div class="form-group">
-                <label for="tanggal_transaksi">Tanggal Transaksi</label>
-                <input type="date" id="tanggal_transaksi" name="tanggal_transaksi" class="form-control" value="{{ date('Y-m-d') }}" required>
+                <label for="tanggal_pembelian">Tanggal Pembelian</label>
+                <input type="date" id="tanggal_pembelian" name="tanggal_pembelian" class="form-control" value="{{ date('Y-m-d') }}" required>
             </div>
 
             <div class="form-group">
-                <label for="nama_pelanggan">Nama Pelanggan</label>
-                <input type="text" id="nama_pelanggan" name="nama_pelanggan" class="form-control" required>
+                <label for="nama_supplier">Nama Supplier</label>
+                <input type="text" id="nama_supplier" name="nama_supplier" class="form-control" required>
             </div>
 
             <div class="form-group">
-                <label for="jumlah_bayar">Jumlah Bayar</label>
-                <input type="number" id="jumlah_bayar" name="jumlah_bayar" class="form-control" required>
+                <label for="no_invoice">No. Invoice</label>
+                <input type="text" id="no_invoice" name="no_invoice" class="form-control" placeholder="INV-001" required>
+            </div>
+
+            <div class="form-group">
+                <label for="metode_pembayaran">Metode Pembayaran</label>
+                <select id="metode_pembayaran" name="metode_pembayaran" class="form-control" required>
+                    <option value="">Pilih Metode</option>
+                    <option value="tunai">Tunai</option>
+                    <option value="transfer">Transfer</option>
+                    <option value="kredit">Kredit/Tempo</option>
+                </select>
             </div>
         
             <div class="form-group">
-                <h4>Total Belanja: <span id="total_harga">Rp. 0</span></h4>
-            </div>
-
-            <div class="form-group"> 
-                <h4>Kembalian: <span id="kembalian">Rp. 0</span></h4>
+                <h4>Total Pembelian: <span id="total_pembelian">Rp. 0</span></h4>
             </div>
         </div>
-        <button type="submit" class="btn add">Selesaikan Penjualan</button>
+        <button type="submit" class="btn add">Selesaikan Pembelian</button>
     </form>
 </div>
 
@@ -248,14 +254,14 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 let cart = [];
-let totalBelanja = 0;
+let totalPembelian = 0;
 
 function saveCartToLocalStorage() {
-    localStorage.setItem('salesCart', JSON.stringify(cart));
+    localStorage.setItem('purchaseCart', JSON.stringify(cart));
 }
 
 function loadCartFromLocalStorage() {
-    const savedCart = localStorage.getItem('salesCart');
+    const savedCart = localStorage.getItem('purchaseCart');
     if (savedCart) {
         try {
             cart = JSON.parse(savedCart);
@@ -266,40 +272,36 @@ function loadCartFromLocalStorage() {
 }
 
 function updateSummary() {
-    totalBelanja = 0;
+    totalPembelian = 0;
     const tbody = document.getElementById('summary-body');
     tbody.innerHTML = '';
 
     cart.forEach(item => {
-        const totalItem = item.harga_setelah_diskon * item.jumlah;
-        totalBelanja += totalItem;
+        const totalItem = item.harga_beli * item.jumlah;
+        totalPembelian += totalItem;
 
         tbody.innerHTML += `
             <tr>
                 <td>${item.nama}</td>
-                <td>Rp ${item.harga_jual.toLocaleString('id-ID')}</td>
+                <td>Rp ${item.harga_beli.toLocaleString('id-ID')}</td>
                 <td>${item.jumlah}</td>
-                <td>${item.diskon}%</td>
-                <td>Rp ${item.harga_setelah_diskon.toLocaleString('id-ID')}</td>
                 <td>Rp ${totalItem.toLocaleString('id-ID')}</td>
                 <td><button type="button" class="btn btn-danger remove-item" data-id="${item.id}" data-type="${item.type}">Hapus</button></td>
             </tr>
         `;
     });
 
-    document.getElementById('total_harga').innerText = 'Rp. ' + totalBelanja.toLocaleString('id-ID');
-    hitungKembalian();
+    document.getElementById('total_pembelian').innerText = 'Rp. ' + totalPembelian.toLocaleString('id-ID');
 }
 
-function addToCart(id, nama, harga, jumlah, diskon, type) {
+function addToCart(id, nama, harga, jumlah, type) {
     // Validasi input
-    if (!id || !nama || isNaN(harga) || isNaN(jumlah) || isNaN(diskon)) {
-        console.error('Data tidak valid:', { id, nama, harga, jumlah, diskon, type });
-        alert('Data produk/service tidak valid!');
+    if (!id || !nama || isNaN(harga) || isNaN(jumlah)) {
+        console.error('Data tidak valid:', { id, nama, harga, jumlah, type });
+        alert('Data produk tidak valid!');
         return;
     }
 
-    const harga_setelah_diskon = harga - (harga * (diskon / 100));
     const uniqueKey = type + '_' + id;
     const existing = cart.find(item => (item.type + '_' + item.id) === uniqueKey);
 
@@ -309,10 +311,8 @@ function addToCart(id, nama, harga, jumlah, diskon, type) {
         const newItem = { 
             id: String(id),
             nama: String(nama),
-            harga_jual: Number(harga),
+            harga_beli: Number(harga),
             jumlah: Number(jumlah),
-            diskon: Number(diskon),
-            harga_setelah_diskon: Number(harga_setelah_diskon),
             type: String(type)
         };
         
@@ -336,30 +336,18 @@ function removeFromCart(id, type) {
     updateSummary();
 }
 
-function hitungKembalian() {
-    const bayar = parseInt(document.getElementById('jumlah_bayar').value) || 0;
-    let kembali = bayar - totalBelanja;
-    if (kembali < 0) kembali = 0;
-
-    document.getElementById('kembalian').innerText = 'Rp. ' + kembali.toLocaleString('id-ID');
-}
-
-document.getElementById('jumlah_bayar').addEventListener('input', hitungKembalian);
-
 // ITEM
 document.querySelectorAll('.add-item').forEach(btn => {
     btn.addEventListener('click', function (e) {
         e.preventDefault();
         const tr = this.closest('tr');
         const jumlah = parseInt(tr.querySelector('.qty').value) || 1;
-        const diskon = parseFloat(this.dataset.discount) || 0;
         const harga = parseFloat(this.dataset.price);
 
         console.log('Item - Data:', {
             id: this.dataset.id,
             name: this.dataset.name,
             price: harga,
-            discount: diskon,
             qty: jumlah
         });
 
@@ -373,41 +361,7 @@ document.querySelectorAll('.add-item').forEach(btn => {
             this.dataset.name,
             harga,
             jumlah,
-            diskon,
             'produk'
-        );
-    });
-});
-
-// SERVICE
-document.querySelectorAll('.add-service').forEach(btn => {
-    btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        const tr = this.closest('tr');
-        const jumlah = parseInt(tr.querySelector('.qty').value) || 1;
-        const harga = parseFloat(this.dataset.price);
-        const diskon = parseFloat(this.dataset.discount) || 0;
-
-        console.log('Service - Data:', {
-            id: this.dataset.id,
-            name: this.dataset.name,
-            price: harga,
-            discount: diskon,
-            qty: jumlah
-        });
-
-        if (isNaN(harga) || harga <= 0) {
-            alert('Harga service tidak valid!');
-            return;
-        }
-
-        addToCart(
-            this.dataset.id,
-            this.dataset.name,
-            harga,
-            jumlah,
-            diskon,
-            'service'
         );
     });
 });
@@ -422,26 +376,22 @@ document.getElementById('summary-body').addEventListener('click', function (e) {
     }
 });
 
-// HANDLE SUBMIT FORM - SELESAIKAN PENJUALAN
-document.getElementById('sale-form').addEventListener('submit', async function(e) {
+// HANDLE SUBMIT FORM - SELESAIKAN PEMBELIAN
+document.getElementById('purchase-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     
     if (cart.length === 0) {
-        alert('Keranjang belanja kosong! Silakan tambahkan produk/service terlebih dahulu.');
+        alert('Keranjang pembelian kosong! Silakan tambahkan produk terlebih dahulu.');
         return;
     }
     
-    const tanggalTransaksi = document.getElementById('tanggal_transaksi').value;
-    const namaPelanggan = document.getElementById('nama_pelanggan').value;
-    const jumlahBayar = parseFloat(document.getElementById('jumlah_bayar').value);
+    const tanggalPembelian = document.getElementById('tanggal_pembelian').value;
+    const namaSupplier = document.getElementById('nama_supplier').value;
+    const noInvoice = document.getElementById('no_invoice').value;
+    const metodePembayaran = document.getElementById('metode_pembayaran').value;
     
-    if (!tanggalTransaksi || !namaPelanggan || !jumlahBayar) {
-        alert('Mohon lengkapi semua data transaksi!');
-        return;
-    }
-    
-    if (jumlahBayar < totalBelanja) {
-        alert('Jumlah bayar kurang dari total belanja!');
+    if (!tanggalPembelian || !namaSupplier || !noInvoice || !metodePembayaran) {
+        alert('Mohon lengkapi semua data pembelian!');
         return;
     }
     
@@ -451,11 +401,9 @@ document.getElementById('sale-form').addEventListener('submit', async function(e
             id: String(item.id),
             type: String(item.type),
             nama: String(item.nama),
-            harga_jual: Number(item.harga_jual),
+            harga_beli: Number(item.harga_beli),
             jumlah: Number(item.jumlah),
-            diskon: Number(item.diskon),
-            harga_setelah_diskon: Number(item.harga_setelah_diskon),
-            total: Number(item.harga_setelah_diskon * item.jumlah)
+            total: Number(item.harga_beli * item.jumlah)
         };
         
         console.log('Formatted item:', formattedItem);
@@ -464,8 +412,8 @@ document.getElementById('sale-form').addEventListener('submit', async function(e
     
     // Validasi items sebelum dikirim
     const invalidItems = formattedItems.filter(item => 
-        isNaN(item.harga_jual) || 
-        item.harga_jual <= 0 || 
+        isNaN(item.harga_beli) || 
+        item.harga_beli <= 0 || 
         isNaN(item.jumlah) || 
         item.jumlah <= 0
     );
@@ -477,18 +425,18 @@ document.getElementById('sale-form').addEventListener('submit', async function(e
     }
     
     const data = {
-        tanggal_transaksi: tanggalTransaksi,
-        nama_pelanggan: namaPelanggan,
-        jumlah_bayar: jumlahBayar,
-        total_belanja: totalBelanja,
-        kembalian: jumlahBayar - totalBelanja,
+        tanggal_pembelian: tanggalPembelian,
+        nama_supplier: namaSupplier,
+        no_invoice: noInvoice,
+        metode_pembayaran: metodePembayaran,
+        total_pembelian: totalPembelian,
         items: formattedItems
     };
     
     console.log('Data yang akan dikirim:', JSON.stringify(data, null, 2));
     
     try {
-        const response = await fetch('{{ route("sale.store") }}', {
+        const response = await fetch('{{ route("purchase.store") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -503,13 +451,13 @@ document.getElementById('sale-form').addEventListener('submit', async function(e
         console.log('Response dari server:', result);
         
         if (result.success) {
-            alert('Transaksi berhasil disimpan!\nID Transaksi: ' + result.data.id_penjualan);
+            alert('Transaksi pembelian berhasil disimpan!\nID Pembelian: ' + result.data.id_pembelian);
             
-            localStorage.removeItem('salesCart');
+            localStorage.removeItem('purchaseCart');
             cart = [];
             
-            document.getElementById('sale-form').reset();
-            document.getElementById('tanggal_transaksi').value = '{{ date("d-m-y") }}';
+            document.getElementById('purchase-form').reset();
+            document.getElementById('tanggal_pembelian').value = '{{ date("Y-m-d") }}';
             
             updateSummary();
             
@@ -520,10 +468,10 @@ document.getElementById('sale-form').addEventListener('submit', async function(e
         
     } catch (error) {
         console.error('Error:', error);
-        alert('Terjadi kesalahan saat menyimpan transaksi!');
+        alert('Terjadi kesalahan saat menyimpan transaksi pembelian!');
     }
 });
 </script>
 
 </body>
-</html>
+</html>  
