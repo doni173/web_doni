@@ -37,7 +37,7 @@ Route::middleware(['auth'])->group(function () {
     
 });
 
-Route::get('/report', [SaleController::class, 'report'])->name('sale.report');
+Route::get('/report', [SaleController::class, 'report'])->name('sales.report');
 
 // Route untuk menampilkan form login (GET) - hanya bisa diakses oleh pengguna yang belum login
 Route::get('/', [LoginController::class, 'showLoginForm'])->name('login')->middleware('guest');
