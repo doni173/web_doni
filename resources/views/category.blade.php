@@ -40,7 +40,7 @@
                     <td>{{ $category->kategori }}</td>
                     <td>
                         <!-- Tombol Edit -->
-                        <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#editCategoryModal{{ $category->id_kategori }}">
+                        <button type="button" class="btn-edit" data-toggle="modal" data-target="#editCategoryModal{{ $category->id_kategori }}">
                             <i class="fas fa-edit"></i> 
                         </button>
 

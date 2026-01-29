@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pengguna | Sistem Inventory dan Kasir</title>
-    <link href="{{ asset('css/app.css') }}" rel="stylesheet"> <!-- Link ke file CSS eksternal -->
-    <!-- SweetAlert2 CDN -->
+    <link href="{{ asset('css/app.css') }}" rel="stylesheet"> 
+    <<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
@@ -42,14 +42,14 @@
                     <td>{{ $user->username }}</td>
                     <td>{{ $user->role }}</td>
                     <td>
-                        <!-- Tombol Edit yang memunculkan Modal -->
-                        <button type="button" class="btn btn-info" data-toggle="modal" data-target="#editUserModal{{ $user->id_user }}">
-                            Edit
+                        <!-- Tombol Edit  -->
+                        <button type="button" class="btn-edit" data-toggle="modal" data-target="#editUserModal{{ $user->id_user }}">
+                            <i class="fas fa-edit"></i>
                         </button>
 
-                        <!-- Tombol Hapus dengan Konfirmasi -->
+                        <!-- Tombol Hapus  -->
                         <button type="button" class="btn btn-danger" onclick="confirmDelete('{{ $user->id_user }}')">
-                            Hapus
+                            <i class="fas fa-trash-alt"></i>
                         </button>
 
                         <!-- Form Penghapusan -->

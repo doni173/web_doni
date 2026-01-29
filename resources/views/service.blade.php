@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Service | Sistem Inventory dan Kasir</title>
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
-    <!-- SweetAlert2 CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
@@ -45,13 +45,13 @@
                     <td>{{ number_format($service->harga_setelah_diskon) }}</td>
                     <td>
                         <!-- Tombol Edit -->
-                        <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#editServiceModal{{ $service->id_service }}">
-                            Edit
+                        <button type="button" class="btn-edit" data-toggle="modal" data-target="#editServiceModal{{ $service->id_service }}">
+                            <i class="fas fa-edit"></i> 
                         </button>
 
                         <!-- Tombol Hapus -->
                         <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete('{{ $service->id_service }}')">
-                            Hapus
+                            <i class="fas fa-trash-alt"></i>
                         </button>
 
                         <!-- Form Penghapusan -->

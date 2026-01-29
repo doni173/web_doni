@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Brand | Sistem Inventory dan Kasir</title>
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
-    <!-- SweetAlert2 CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
@@ -21,7 +21,7 @@
             <form action="{{ route('brands.index') }}" method="GET">
                 <input type="text" class="form-control" placeholder="Cari brand..." name="q" value="{{ request('q') }}" style="width: 300px;">
                 <button type="submit" class="btn-src">Search</button>
-                 <button type="button" class="btn-add" data-toggle="modal" data-target="#addBrandModal">Tambah Data</button>
+                <button type="button" class="btn-add" data-toggle="modal" data-target="#addBrandModal">Tambah Data</button>
             </form>
         </div><br>
         
@@ -40,13 +40,13 @@
                     <td>{{ $brand->brand }}</td>
                     <td>
                         <!-- Tombol Edit -->
-                        <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#editBrandModal{{ $brand->id_brand }}">
-                            Edit
+                        <button type="button" class="btn-edit" data-toggle="modal" data-target="#editBrandModal{{ $brand->id_brand }}">
+                            <i class="fas fa-edit"></i>
                         </button>
 
                         <!-- Tombol Hapus -->
                         <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete('{{ $brand->id_brand }}')">
-                            Hapus
+                            <i class="fas fa-trash-alt"></i>
                         </button>
 
                         <!-- Form Penghapusan -->

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barang | Sistem Inventory dan Kasir</title>
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
@@ -57,8 +58,12 @@
                     <td>Rp.{{ number_format($item->harga_setelah_diskon) }}</td>
                      <!-- Menampilkan harga setelah diskon -->
                     <td>
-                        <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#editItemModal{{ $item->id_produk }}">Edit</button>
-                        <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete('{{ $item->id_produk }}')">Hapus</button>
+                        <button type="button" class="btn-edit" data-toggle="modal" data-target="#editItemModal{{ $item->id_produk }}">
+                            <i class="fas fa-edit"></i> 
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete('{{ $item->id_produk }}')">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
                         <form id="delete-form-{{ $item->id_produk }}" action="{{ route('items.destroy', $item->id_produk) }}" method="POST" style="display: none;">
                             @csrf
                             @method('DELETE')

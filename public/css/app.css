@@ -390,6 +390,19 @@ body.login {
     background-color: #28a745; /* Efek hover untuk tombol */
 }
 
+.btn-edit {
+    background-color: #268b3e;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 10px;
+    border-radius: 8px;
+    width: 26px;
+    transition: background-color 0.3s ease;
+    margin-left: 10px;
+}
 .table-main {
     width: 100%;
     margin-top: 5px;
