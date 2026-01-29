@@ -24,21 +24,23 @@
             <!-- Report Section -->
             <div class="sidebar-section"><li>Laporan</li></div>
             <ul>
-                <li><a href="#"><i class="bi bi-file-earmark-spreadsheet"></i>laporan</a></li> <!-- Placeholder for route -->
+                <li><a href="sale.report"><i class="bi bi-file-earmark-spreadsheet"></i>laporan</a></li> <!-- Placeholder for route -->
             </ul>
 
             <!-- Transaksi Section -->
             <div class="sidebar-section"><li>Transaksi</li></div>
             <ul>
-                <li><a href="{{ route('purchase.index') }}"><i class="bi bi-cart-check"></i>Beli</a></li> <!-- Placeholder for route -->
                 <li><a href="{{ route('sale.index') }}"><i class="bi bi-cart-fill"></i>Jual</a></li>
+                <li><a href="{{ route('purchase.index') }}"><i class="bi bi-cart-check"></i>Beli</a></li> <!-- Placeholder for route -->
+                
             </ul>
 
             <!-- History Section -->
             <div class="sidebar-section"><li>Riwayat</li></div>
             <ul>
-                <li><a href="#"><i class="bi bi-clock"></i>Beli</a></li> <!-- Placeholder for route -->
                 <li><a href="{{ route('sale.history') }}"><i class="bi bi-clock-history"></i>jual</a></li>
+                <li><a href="#"><i class="bi bi-clock"></i>Beli</a></li> <!-- Placeholder for route -->
+                
             </ul>
         </ul>
     </nav>
