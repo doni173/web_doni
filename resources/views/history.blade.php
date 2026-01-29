@@ -23,7 +23,7 @@
         <div class="table-wrapper">
             <div class="table-container">
                 <h3>Daftar Transaksi</h3>
-                <table class="table table-striped">
+                <table class="table-main">
                     <thead>
                         <tr>
                             <th>ID Penjualan</th>
@@ -47,7 +47,7 @@
                             <td>Rp {{ number_format($sale->jumlah_bayar, 0, ',', '.') }}</td>
                             <td>Rp {{ number_format($sale->kembalian, 0, ',', '.') }}</td>
                             <td>
-                                <a href="{{ route('sale.show', $sale->id_penjualan) }}" class="btn btn-info btn-sm">Detail</a>
+                                <a href="{{ route('sale.show', $sale->id_penjualan) }}" class="btn-detail">Detail</a>
                             </td>
                         </tr>
                         @empty

@@ -24,7 +24,7 @@
             <!-- Report Section -->
             <div class="sidebar-section"><li>Laporan</li></div>
             <ul>
-                <li><a href="{{ route('sale.report') }}"><i class="bi bi-file-earmark-spreadsheet"></i>Laporan</a></li> <!-- Placeholder for route -->
+                <li><a href="{{ route('sales.report') }}"><i class="bi bi-file-earmark-spreadsheet"></i>Laporan</a></li> <!-- Placeholder for route -->
             </ul>
 
             <!-- Transaksi Section -->
