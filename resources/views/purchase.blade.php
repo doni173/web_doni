@@ -4,114 +4,159 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Pembelian | Sistem Inventory dan Kasir</title>
+    <title>Pembelian Barang | Sistem Inventory dan Kasir</title>
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
 </head>
 
 <body>
 @include('layouts.sidebar')
 @include('layouts.navbar')
+
 <div class="container">
     <div class="container-daftar">
-        <div class="">
-            <div class="padding">
-            <h2>Transaksi Pembelian (Restock)</h2>
-            </div>
-        </div>  
-        
-        <!-- Daftar Barang -->
-        <div class="table-wrapper">
-            <div class="table-container">
-                <form action="{{ route('purchase.index') }}" method="GET" class="search-form">
-                    <input type="text" class="form-control" placeholder="Cari barang..." name="q_barang" value="{{ request('q_barang') }}" style="width: 300px;">
-                    <button type="submit" class="btn-src1">Search</button>
-                </form>
-                <table class="table-main">
-                    <thead>
-                        <tr>
-                            <th>Produk</th>
-                            <th>Kategori</th>
-                            <th>Brand</th>
-                            <th>Stok Saat Ini</th>
-                            <th>Jumlah Beli</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($items as $item)
-                        <tr>
-                            <td>{{ $item->nama_produk }}</td>
-                            <td>{{ $item->kategori->kategori ?? '-' }}</td>
-                            <td>{{ $item->brand->brand ?? '-' }}</td>
-                            <td>{{ $item->stok ?? 0 }}</td>
-                            <td>
-                                <input type="number" name="qty" class="form-control qty" data-id="{{ $item->id_produk }}" value="1" min="1" max="1000">
-                            </td>
-                            <td>
-                                <button type="button" class="btn btn-success add-item" 
-                                    data-id="{{ $item->id_produk }}" 
-                                    data-name="{{ $item->nama_produk }}" 
-                                    data-kategori="{{ $item->kategori->kategori ?? '-' }}"
-                                    data-brand="{{ $item->brand->brand ?? '-' }}"
-                                    data-stok="{{ $item->stok ?? 0 }}"
-                                    data-type="produk">Tambah</button>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+        <div class="padding">
+            <h2>Pembelian Barang</h2>
         </div>
+
+        <!-- Form Pencarian -->
+        <div class="search-section">
+            <form action="{{ route('purchase.index') }}" method="GET" class="search-form">
+                <input type="text" class="form-control" placeholder="Cari produk..." name="q" value="{{ request('q') }}" style="width: 300px;">
+                <button type="submit" class="btn-src1">Search</button>
+            </form>
+        </div>
+
+        <!-- Tabel Daftar Produk -->
+        <div class="table-container">
+            <table class="table-main">
+                <thead>
+                    <tr>
+                        <th>Kode Produk</th>
+                        <th>Nama Produk</th>
+                        <th>Stok Saat Ini</th>
+                        <th>Harga Beli</th>
+                        <th>Supplier</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($items as $item)
+                    <tr class="{{ $item->stok < 10 ? 'low-stock' : '' }}">
+                        <td>{{ $item->id_produk }}</td>
+                        <td>{{ $item->nama_produk }}</td>
+                        <td>
+                            <span class="stock-badge {{ $item->stok < 10 ? 'badge-danger' : 'badge-success' }}">
+                                {{ $item->stok }}
+                            </span>
+                        </td>
+                        <td>Rp {{ number_format($item->modal, 0, ',', '.') }}</td>
+                        <td>{{ $item->supplier ?? '-' }}</td>
+                        <td>
+                            <button type="button" class="btn btn-primary btn-purchase" 
+                                data-id="{{ $item->id_produk }}"
+                                data-name="{{ $item->nama_produk }}"
+                                data-stock="{{ $item->stok }}"
+                                data-price="{{ $item->harga_beli }}">
+                                Tambah
+                            </button>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="6" style="text-align: center;">Tidak ada data produk</td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-wrapper">
+            {{ $items->links() }}
+        </div>
+    </div>
+
+    <!-- Ringkasan Pembelian -->
+    <div class="container-ringkasan">
+        <h3>Ringkasan Pembelian</h3>
+        <table class="table-main" id="summary-table">
+            <thead>
+                <tr>
+                    <th>Kode Produk</th>
+                    <th>Nama Produk</th>
+                    <th>Stok Lama</th>
+                    <th>Jumlah Beli</th>
+                    <th>Stok Baru</th>
+                    <th>Harga Beli Satuan</th>
+                    <th>Total Biaya</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="summary-body">
+                <!-- Data pembelian akan muncul di sini -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Form Penyelesaian Pembelian -->
+    <div class="container-bayar">
+        <form id="purchase-form">
+            @csrf
+            <div class="form-wrapper">     
+                <div class="form-group">
+                    <label for="tanggal_pembelian">Tanggal Pembelian</label>
+                    <input type="date" id="tanggal_pembelian" name="tanggal_pembelian" class="form-control" value="{{ date('Y-m-d') }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="supplier">Supplier</label>
+                    <input type="text" id="supplier" name="supplier" class="form-control" placeholder="Nama Supplier" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="keterangan">Keterangan</label>
+                    <input type="text" id="keterangan" name="keterangan" class="form-control" placeholder="Keterangan (opsional)">
+                </div>
+            
+                <div class="form-group">
+                    <h4>Total Biaya: <span id="total_biaya">Rp. 0</span></h4>
+                </div>
+            </div>
+            <button type="submit" class="btn add">Selesaikan Pembelian</button>
+        </form>
     </div>
 </div>
 
-<!-- Ringkasan Pembelian -->
-<div class="container-ringkasan"> 
-    <table class="table-main" id="summary-table">
-        <thead>
-            <tr>
-                <th>Produk</th>
-                <th>Kategori</th>
-                <th>Brand</th>
-                <th>Stok Saat Ini</th>
-                <th>Jumlah Beli</th>
-                <th>Harga Beli Satuan</th>
-                <th>Total Harga</th>
-                <th>Aksi</th>
-            </tr>
-        </thead>
-        <tbody id="summary-body">
-            <!-- Data yang ditambahkan akan muncul di sini -->
-        </tbody>    
-    </table>
-</div>
-
-<!-- Form Pembelian -->
-<div class="container-bayar">
-    <form id="purchase-form">
-        @csrf
-        <div class="form-wrapper">     
+<!-- Modal Purchase -->
+<div id="purchaseModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h3>Pembelian Produk</h3>
+        <form id="modal-purchase-form">
             <div class="form-group">
-                <label for="tanggal_pembelian">Tanggal Pembelian</label>
-                <input type="date" id="tanggal_pembelian" name="tanggal_pembelian" class="form-control" value="{{ date('Y-m-d') }}" required>
+                <label>Nama Produk</label>
+                <input type="text" id="modal-product-name" class="form-control" readonly>
+                <input type="hidden" id="modal-product-id">
             </div>
-
             <div class="form-group">
-                <label for="nama_supplier">Nama Supplier</label>
-                <input type="text" id="nama_supplier" name="nama_supplier" class="form-control" required>
+                <label>Stok Saat Ini</label>
+                <input type="number" id="modal-current-stock" class="form-control" readonly>
             </div>
-
             <div class="form-group">
-                <label for="nomor_invoice">Nomor Invoice</label>
-                <input type="text" id="nomor_invoice" name="nomor_invoice" class="form-control" placeholder="INV-001" required>
+                <label>Jumlah Beli</label>
+                <input type="number" id="modal-purchase-qty" class="form-control" min="1" value="1" required>
             </div>
-        
             <div class="form-group">
-                <h4>Total Pembelian: <span id="total_pembelian">Rp. 0</span></h4>
+                <label>Harga Beli Satuan</label>
+                <input type="number" id="modal-product-price" class="form-control" min="0" step="1">
             </div>
-        </div>
-        <button type="submit" class="btn add">Selesaikan Pembelian</button>
-    </form>
+            <div class="form-group">
+                <label>Total Biaya</label>
+                <input type="text" id="modal-total-cost" class="form-control" readonly>
+            </div>
+            <button type="button" id="add-to-summary-btn" class="btn btn-primary">Tambahkan ke Ringkasan</button>
+        </form>
+    </div>
 </div>
 
 @push('styles')
@@ -131,101 +176,123 @@
     }
 
     .container-daftar h2 {
-        margin-top : 1px;
+        margin-top: 1px;
+        margin-bottom: 20px;
     }
-    .container-daftar h3 {
-        margin-top : 1px;
+
+    .search-section {
+        margin-bottom: 20px;
     }
-    
+
+    .search-form {
+        display: flex;
+        gap: 10px;
+    }
+
     .container-ringkasan {
         margin-top: 15px;
         background-color: #fff;
-        padding: 10px;
+        padding: 20px;
         border-radius: 8px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
-    .container-ringkasan h2 {
-        margin-top : 1px;
-    }
-
     .container-ringkasan h3 {
-        margin-top : 1px;
+        margin-top: 1px;
+        margin-bottom: 15px;
     }
 
     .container-bayar {
         font-family: 'Open Sans', sans-serif;
         margin-top: 15px;
         background-color: #fff;
-        padding: 10px;
+        padding: 20px;
         border-radius: 8px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
-    .container-bayar h2 {
-        margin-top : 1px;
-    }
-
-    .container-bayar h3 {
-        margin-top : 1px;
-    }
-
     .form-wrapper {
         display: flex;
-        gap: 5px;
-    }
-
-    .form-wrapper1 {
-        display: flex;
-        gap: 120px;
+        gap: 15px;
+        flex-wrap: wrap;
     }
 
     .form-group {
         margin-top: 8px;
         margin-left: 10px;
+        flex: 1;
+        min-width: 200px;
     }
 
-    .table-wrapper {
-        display: flex;
-        gap: 10px;
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
     }
 
     .table-container {
-        margin-bottom: 5px;
-        flex: 1;
-    }
-    .table-container h3 {
-        margin-bottom: 1px;
+        margin-bottom: 20px;
+        overflow-x: auto;
     }
 
-    .table {
+    .table-main {
         width: 100%;
-        margin-top: 20px;
         border-collapse: collapse;
     }
 
-    .table-striped tr:nth-child(odd) {
-        background-color: #f9f9f9;
-    }
-
-    .table th, .table td {
+    .table-main th, .table-main td {
         padding: 12px 15px;
         text-align: left;
         border-bottom: 1px solid #ddd;
     }
 
-    .table th {
+    .table-main th {
         background-color: #007bff;
         color: #fff;
+        font-weight: 600;
     }
 
-    .btn-success {
+    .table-main tbody tr:hover {
+        background-color: #f5f5f5;
+    }
+
+    .low-stock {
+        background-color: #fff3cd !important;
+    }
+
+    .stock-badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .badge-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .badge-success {
         background-color: #28a745;
         color: white;
     }
 
-    .btn-success:hover {
-        background-color: #218838;
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
     }
 
     .btn-danger {
@@ -237,290 +304,229 @@
         background-color: #c82333;
     }
 
+    .btn.add {
+        background-color: #28a745;
+        color: white;
+        font-size: 16px;
+        padding: 12px 24px;
+        margin-top: 10px;
+    }
+
+    .btn.add:hover {
+        background-color: #218838;
+    }
+
+    .btn-src1 {
+        background-color: #007bff;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .btn-src1:hover {
+        background-color: #0056b3;
+    }
+
     .form-control {
         width: 100%;
         padding: 8px;
-        font-size: 10px;
+        font-size: 14px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
         margin-bottom: 2px;
         margin-top: 2px;
     }
 
-    .form-control-qty{ 
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
         width: 100%;
-        padding: 2px;
-        font-size: 10px;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
     }
-    .form-control2 {
-        width: 100%;
-        padding: 8px;
-        font-size: 10px;
+
+    .modal-content {
+        background-color: #fff;
+        margin: 10% auto;
+        padding: 30px;
+        border-radius: 8px;
+        width: 500px;
+        max-width: 90%;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-content h3 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: #000;
+    }
+
+    .pagination-wrapper {
+        margin-top: 20px;
+        display: flex;
+        justify-content: center;
     }
 </style>
 @endpush
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    loadCartFromLocalStorage();
+    loadPurchaseFromLocalStorage();
     updateSummary();
 });
 
-let cart = [];
-let totalPembelian = 0;
+let purchaseCart = [];
+let totalBiaya = 0;
 
-function saveCartToLocalStorage() {
-    localStorage.setItem('purchaseCart', JSON.stringify(cart));
+function savePurchaseToLocalStorage() {
+    localStorage.setItem('purchaseCart', JSON.stringify(purchaseCart));
 }
 
-function loadCartFromLocalStorage() {
+function loadPurchaseFromLocalStorage() {
     const savedCart = localStorage.getItem('purchaseCart');
     if (savedCart) {
         try {
-            cart = JSON.parse(savedCart);
+            purchaseCart = JSON.parse(savedCart);
         } catch (e) {
-            cart = [];
+            purchaseCart = [];
         }
     }
 }
 
 function updateSummary() {
-    totalPembelian = 0;
+    totalBiaya = 0;
     const tbody = document.getElementById('summary-body');
     tbody.innerHTML = '';
 
-    cart.forEach(item => {
-        const totalItem = item.harga_beli * item.jumlah;
-        totalPembelian += totalItem;
+    purchaseCart.forEach(item => {
+        const totalItem = item.harga_beli * item.jumlah_beli;
+        const stokBaru = parseInt(item.stok_lama) + parseInt(item.jumlah_beli);
+        totalBiaya += totalItem;
 
         tbody.innerHTML += `
             <tr>
+                <td>${item.id}</td>
                 <td>${item.nama}</td>
-                <td>${item.kategori}</td>
-                <td>${item.brand}</td>
-                <td>${item.stok_saat_ini}</td>
-                <td>${item.jumlah}</td>
-                <td>
-                    <input type="number" 
-                        class="form-control harga-beli" 
-                        data-id="${item.id}" 
-                        value="${item.harga_beli}" 
-                        min="0" 
-                        step="1000"
-                        style="width: 150px;">
-                </td>
+                <td>${item.stok_lama}</td>
+                <td>${item.jumlah_beli}</td>
+                <td>${stokBaru}</td>
+                <td>Rp ${item.harga_beli.toLocaleString('id-ID')}</td>
                 <td>Rp ${totalItem.toLocaleString('id-ID')}</td>
-                <td><button type="button" class="btn btn-danger remove-item" data-id="${item.id}" data-type="${item.type}">Hapus</button></td>
+                <td><button type="button" class="btn btn-danger remove-item" data-id="${item.id}">Hapus</button></td>
             </tr>
         `;
     });
 
-    document.getElementById('total_pembelian').innerText = 'Rp. ' + totalPembelian.toLocaleString('id-ID');
-    
-    // Add event listeners untuk update harga beli
-    document.querySelectorAll('.harga-beli').forEach(input => {
-        input.addEventListener('input', function() {
-            const itemId = this.dataset.id;
-            const newPrice = parseFloat(this.value) || 0;
-            updateItemPrice(itemId, newPrice);
-        });
-    });
+    document.getElementById('total_biaya').innerText = 'Rp. ' + totalBiaya.toLocaleString('id-ID');
 }
 
-function updateItemPrice(itemId, newPrice) {
-    const item = cart.find(i => i.id === itemId);
-    if (item) {
-        item.harga_beli = newPrice;
-        saveCartToLocalStorage();
-        updateSummary();
-    }
-}
+document.querySelectorAll('.btn-purchase').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const id = this.dataset.id;
+        const name = this.dataset.name;
+        const stock = this.dataset.stock;
+        const price = this.dataset.price || 0;
 
-function addToCart(id, nama, kategori, brand, stok, jumlah, type) {
-    // Validasi input
-    if (!id || !nama || isNaN(jumlah)) {
-        console.error('Data tidak valid:', { id, nama, jumlah, type });
-        alert('Data produk tidak valid!');
-        return;
-    }
+        document.getElementById('modal-product-id').value = id;
+        document.getElementById('modal-product-name').value = name;
+        document.getElementById('modal-current-stock').value = stock;
+        document.getElementById('modal-product-price').value = price;
+        document.getElementById('modal-purchase-qty').value = 1;
 
-    const uniqueKey = type + '_' + id;
-    const existing = cart.find(item => (item.type + '_' + item.id) === uniqueKey);
+        calculateModalTotal();
 
-    if (existing) {
-        existing.jumlah += jumlah;
-    } else {
-        const newItem = { 
-            id: String(id),
-            nama: String(nama),
-            kategori: String(kategori),
-            brand: String(brand),
-            stok_saat_ini: Number(stok),
-            jumlah: Number(jumlah),
-            harga_beli: 0, // User akan input manual
-            type: String(type)
-        };
-        
-        console.log('Menambahkan item ke cart:', newItem);
-        cart.push(newItem);
-    }
-
-    saveCartToLocalStorage();
-    updateSummary();
-}
-
-function removeFromCart(id, type) {
-    const uniqueKey = type + '_' + id;
-    const index = cart.findIndex(item => (item.type + '_' + item.id) === uniqueKey);
-    
-    if (index !== -1) {
-        cart.splice(index, 1);
-    }
-    
-    saveCartToLocalStorage();
-    updateSummary();
-}
-
-// ADD ITEM
-document.querySelectorAll('.add-item').forEach(btn => {
-    btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        const tr = this.closest('tr');
-        const jumlah = parseInt(tr.querySelector('.qty').value) || 1;
-
-        console.log('Item - Data:', {
-            id: this.dataset.id,
-            name: this.dataset.name,
-            kategori: this.dataset.kategori,
-            brand: this.dataset.brand,
-            stok: this.dataset.stok,
-            qty: jumlah
-        });
-
-        addToCart(
-            this.dataset.id,
-            this.dataset.name,
-            this.dataset.kategori,
-            this.dataset.brand,
-            this.dataset.stok,
-            jumlah,
-            'produk'
-        );
+        modal.style.display = 'block';
     });
 });
 
-// REMOVE ITEM
-document.getElementById('summary-body').addEventListener('click', function (e) {
+document.querySelector('.close').addEventListener('click', function() {
+    modal.style.display = 'none';
+});
+
+window.addEventListener('click', function(e) {
+    if (e.target === modal) {
+        modal.style.display = 'none';
+    }
+});
+
+document.getElementById('modal-purchase-qty').addEventListener('input', calculateModalTotal);
+
+function calculateModalTotal() {
+    const qty = parseInt(document.getElementById('modal-purchase-qty').value) || 0;
+    const price = parseFloat(document.getElementById('modal-product-price').value) || 0;
+    const total = qty * price;
+    document.getElementById('modal-total-cost').value = 'Rp ' + total.toLocaleString('id-ID');
+}
+
+document.getElementById('add-to-summary-btn').addEventListener('click', function() {
+    const id = document.getElementById('modal-product-id').value;
+    const nama = document.getElementById('modal-product-name').value;
+    const stokLama = document.getElementById('modal-current-stock').value;
+    const jumlahBeli = document.getElementById('modal-purchase-qty').value;
+    const hargaBeli = document.getElementById('modal-product-price').value;
+
+    if (!hargaBeli || parseFloat(hargaBeli) <= 0) {
+        alert('Mohon isi harga beli yang valid!');
+        return;
+    }
+
+    const totalBiaya = jumlahBeli * hargaBeli;
+    const stokBaru = parseInt(stokLama) + parseInt(jumlahBeli);
+
+    const rowHTML = `
+        <tr>
+            <td>${id}</td>
+            <td>${nama}</td>
+            <td>${stokLama}</td>
+            <td>${jumlahBeli}</td>
+            <td>${stokBaru}</td>
+            <td>Rp ${hargaBeli.toLocaleString('id-ID')}</td>
+            <td>Rp ${totalBiaya.toLocaleString('id-ID')}</td>
+            <td><button type="button" class="btn btn-danger remove-item" data-id="${id}">Hapus</button></td>
+        </tr>
+    `;
+
+    document.getElementById('summary-body').insertAdjacentHTML('beforeend', rowHTML);
+    updateTotalBiaya();
+
+    modal.style.display = 'none';
+});
+
+function updateTotalBiaya() {
+    totalBiaya = 0;
+    const rows = document.querySelectorAll('#summary-body tr');
+    rows.forEach(row => {
+        const total = parseFloat(row.cells[6].textContent.replace('Rp', '').replace(/\./g, '')) || 0;
+        totalBiaya += total;
+    });
+    document.getElementById('total_biaya').textContent = 'Rp ' + totalBiaya.toLocaleString('id-ID');
+}
+
+document.getElementById('summary-body').addEventListener('click', function(e) {
     if (e.target && e.target.classList.contains('remove-item')) {
         e.preventDefault();
-        const itemId = e.target.dataset.id;
-        const itemType = e.target.dataset.type;
-        removeFromCart(itemId, itemType);
-    }
-});
-
-// HANDLE SUBMIT FORM - SELESAIKAN PEMBELIAN
-document.getElementById('purchase-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    if (cart.length === 0) {
-        alert('Keranjang pembelian kosong! Silakan tambahkan produk terlebih dahulu.');
-        return;
-    }
-    
-    const tanggalPembelian = document.getElementById('tanggal_pembelian').value;
-    const namaSupplier = document.getElementById('nama_supplier').value;
-    const nomorInvoice = document.getElementById('nomor_invoice').value;
-    
-    if (!tanggalPembelian || !namaSupplier || !nomorInvoice) {
-        alert('Mohon lengkapi semua data pembelian!');
-        return;
-    }
-    
-    // Validasi harga beli
-    const invalidPrices = cart.filter(item => !item.harga_beli || item.harga_beli <= 0);
-    if (invalidPrices.length > 0) {
-        alert('Mohon isi harga beli untuk semua item!');
-        return;
-    }
-    
-    // Format items sesuai ekspektasi backend
-    const formattedItems = cart.map(item => {
-        const formattedItem = {
-            id: String(item.id),
-            type: String(item.type),
-            nama: String(item.nama),
-            kategori: String(item.kategori),
-            brand: String(item.brand),
-            stok_saat_ini: Number(item.stok_saat_ini),
-            jumlah: Number(item.jumlah),
-            harga_beli: Number(item.harga_beli),
-            total: Number(item.harga_beli * item.jumlah)
-        };
-        
-        console.log('Formatted item:', formattedItem);
-        return formattedItem;
-    });
-    
-    // Validasi items sebelum dikirim
-    const invalidItems = formattedItems.filter(item => 
-        isNaN(item.harga_beli) || 
-        item.harga_beli <= 0 || 
-        isNaN(item.jumlah) || 
-        item.jumlah <= 0
-    );
-    
-    if (invalidItems.length > 0) {
-        console.error('Items tidak valid:', invalidItems);
-        alert('Ada item dengan harga atau jumlah tidak valid! Mohon periksa kembali.');
-        return;
-    }
-    
-    const data = {
-        tanggal_pembelian: tanggalPembelian,
-        nama_supplier: namaSupplier,
-        nomor_invoice: nomorInvoice,
-        total_pembelian: totalPembelian,
-        items: formattedItems
-    };
-    
-    console.log('Data yang akan dikirim:', JSON.stringify(data, null, 2));
-    
-    try {
-        const response = await fetch('{{ route("purchase.store") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        
-        console.log('Response dari server:', result);
-        
-        if (result.success) {
-            alert('Pembelian berhasil disimpan!\nID Pembelian: ' + result.data.id_pembelian);
-            
-            localStorage.removeItem('purchaseCart');
-            cart = [];
-            
-            document.getElementById('purchase-form').reset();
-            document.getElementById('tanggal_pembelian').value = '{{ date("Y-m-d") }}';
-            
-            updateSummary();
-            
-            // Redirect atau reload jika diperlukan
-            // window.location.href = '{{ route("purchase.index") }}';
-            
-        } else {
-            alert('Gagal menyimpan pembelian: ' + (result.message || 'Terjadi kesalahan'));
-            console.error('Error detail:', result);
-        }
-        
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Terjadi kesalahan saat menyimpan pembelian!');
+        const row = e.target.closest('tr');
+        row.remove();
+        updateTotalBiaya();
     }
 });
 </script>

@@ -14,7 +14,6 @@ use Carbon\Carbon;
 
 class SaleController extends Controller
 {
-    // Menampilkan halaman penjualan
     public function index(Request $request)
     {
         $q_barang = $request->query('q_barang');  // Pencarian barang
