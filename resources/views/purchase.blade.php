@@ -15,12 +15,12 @@
     <div class="container-daftar">
         <div class="">
             <div class="padding">
-            <h2>Transaksi Pembelian</h2>
+            <h2>Transaksi Pembelian (Restock)</h2>
             </div>
         </div>  
-        <!-- Wrapper untuk tabel Daftar Barang -->
+        
+        <!-- Daftar Barang -->
         <div class="table-wrapper">
-            <!-- Daftar Barang untuk Pembelian -->
             <div class="table-container">
                 <form action="{{ route('purchase.index') }}" method="GET" class="search-form">
                     <input type="text" class="form-control" placeholder="Cari barang..." name="q_barang" value="{{ request('q_barang') }}" style="width: 300px;">
@@ -30,8 +30,10 @@
                     <thead>
                         <tr>
                             <th>Produk</th>
-                            <th>Harga Beli</th>
-                            <th>Jumlah</th>
+                            <th>Kategori</th>
+                            <th>Brand</th>
+                            <th>Stok Saat Ini</th>
+                            <th>Jumlah Beli</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
@@ -39,7 +41,9 @@
                         @foreach($items as $item)
                         <tr>
                             <td>{{ $item->nama_produk }}</td>
-                            <td>{{ number_format($item->harga_beli, 0, ',', '.') }}</td>
+                            <td>{{ $item->kategori->kategori ?? '-' }}</td>
+                            <td>{{ $item->brand->brand ?? '-' }}</td>
+                            <td>{{ $item->stok ?? 0 }}</td>
                             <td>
                                 <input type="number" name="qty" class="form-control qty" data-id="{{ $item->id_produk }}" value="1" min="1" max="1000">
                             </td>
@@ -47,7 +51,9 @@
                                 <button type="button" class="btn btn-success add-item" 
                                     data-id="{{ $item->id_produk }}" 
                                     data-name="{{ $item->nama_produk }}" 
-                                    data-price="{{ $item->harga_beli }}"
+                                    data-kategori="{{ $item->kategori->kategori ?? '-' }}"
+                                    data-brand="{{ $item->brand->brand ?? '-' }}"
+                                    data-stok="{{ $item->stok ?? 0 }}"
                                     data-type="produk">Tambah</button>
                             </td>
                         </tr>
@@ -59,13 +65,17 @@
     </div>
 </div>
 
+<!-- Ringkasan Pembelian -->
 <div class="container-ringkasan"> 
     <table class="table-main" id="summary-table">
         <thead>
             <tr>
                 <th>Produk</th>
-                <th>Harga Beli</th>
-                <th>Jumlah</th>
+                <th>Kategori</th>
+                <th>Brand</th>
+                <th>Stok Saat Ini</th>
+                <th>Jumlah Beli</th>
+                <th>Harga Beli Satuan</th>
                 <th>Total Harga</th>
                 <th>Aksi</th>
             </tr>
@@ -76,6 +86,7 @@
     </table>
 </div>
 
+<!-- Form Pembelian -->
 <div class="container-bayar">
     <form id="purchase-form">
         @csrf
@@ -91,18 +102,8 @@
             </div>
 
             <div class="form-group">
-                <label for="no_invoice">No. Invoice</label>
-                <input type="text" id="no_invoice" name="no_invoice" class="form-control" placeholder="INV-001" required>
-            </div>
-
-            <div class="form-group">
-                <label for="metode_pembayaran">Metode Pembayaran</label>
-                <select id="metode_pembayaran" name="metode_pembayaran" class="form-control" required>
-                    <option value="">Pilih Metode</option>
-                    <option value="tunai">Tunai</option>
-                    <option value="transfer">Transfer</option>
-                    <option value="kredit">Kredit/Tempo</option>
-                </select>
+                <label for="nomor_invoice">Nomor Invoice</label>
+                <input type="text" id="nomor_invoice" name="nomor_invoice" class="form-control" placeholder="INV-001" required>
             </div>
         
             <div class="form-group">
@@ -227,6 +228,15 @@
         background-color: #218838;
     }
 
+    .btn-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background-color: #c82333;
+    }
+
     .form-control {
         width: 100%;
         padding: 8px;
@@ -246,6 +256,7 @@
         font-size: 10px;
     }
 </style>
+@endpush
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -283,8 +294,19 @@ function updateSummary() {
         tbody.innerHTML += `
             <tr>
                 <td>${item.nama}</td>
-                <td>Rp ${item.harga_beli.toLocaleString('id-ID')}</td>
+                <td>${item.kategori}</td>
+                <td>${item.brand}</td>
+                <td>${item.stok_saat_ini}</td>
                 <td>${item.jumlah}</td>
+                <td>
+                    <input type="number" 
+                        class="form-control harga-beli" 
+                        data-id="${item.id}" 
+                        value="${item.harga_beli}" 
+                        min="0" 
+                        step="1000"
+                        style="width: 150px;">
+                </td>
                 <td>Rp ${totalItem.toLocaleString('id-ID')}</td>
                 <td><button type="button" class="btn btn-danger remove-item" data-id="${item.id}" data-type="${item.type}">Hapus</button></td>
             </tr>
@@ -292,12 +314,30 @@ function updateSummary() {
     });
 
     document.getElementById('total_pembelian').innerText = 'Rp. ' + totalPembelian.toLocaleString('id-ID');
+    
+    // Add event listeners untuk update harga beli
+    document.querySelectorAll('.harga-beli').forEach(input => {
+        input.addEventListener('input', function() {
+            const itemId = this.dataset.id;
+            const newPrice = parseFloat(this.value) || 0;
+            updateItemPrice(itemId, newPrice);
+        });
+    });
 }
 
-function addToCart(id, nama, harga, jumlah, type) {
+function updateItemPrice(itemId, newPrice) {
+    const item = cart.find(i => i.id === itemId);
+    if (item) {
+        item.harga_beli = newPrice;
+        saveCartToLocalStorage();
+        updateSummary();
+    }
+}
+
+function addToCart(id, nama, kategori, brand, stok, jumlah, type) {
     // Validasi input
-    if (!id || !nama || isNaN(harga) || isNaN(jumlah)) {
-        console.error('Data tidak valid:', { id, nama, harga, jumlah, type });
+    if (!id || !nama || isNaN(jumlah)) {
+        console.error('Data tidak valid:', { id, nama, jumlah, type });
         alert('Data produk tidak valid!');
         return;
     }
@@ -311,8 +351,11 @@ function addToCart(id, nama, harga, jumlah, type) {
         const newItem = { 
             id: String(id),
             nama: String(nama),
-            harga_beli: Number(harga),
+            kategori: String(kategori),
+            brand: String(brand),
+            stok_saat_ini: Number(stok),
             jumlah: Number(jumlah),
+            harga_beli: 0, // User akan input manual
             type: String(type)
         };
         
@@ -336,30 +379,28 @@ function removeFromCart(id, type) {
     updateSummary();
 }
 
-// ITEM
+// ADD ITEM
 document.querySelectorAll('.add-item').forEach(btn => {
     btn.addEventListener('click', function (e) {
         e.preventDefault();
         const tr = this.closest('tr');
         const jumlah = parseInt(tr.querySelector('.qty').value) || 1;
-        const harga = parseFloat(this.dataset.price);
 
         console.log('Item - Data:', {
             id: this.dataset.id,
             name: this.dataset.name,
-            price: harga,
+            kategori: this.dataset.kategori,
+            brand: this.dataset.brand,
+            stok: this.dataset.stok,
             qty: jumlah
         });
-
-        if (isNaN(harga) || harga <= 0) {
-            alert('Harga produk tidak valid!');
-            return;
-        }
 
         addToCart(
             this.dataset.id,
             this.dataset.name,
-            harga,
+            this.dataset.kategori,
+            this.dataset.brand,
+            this.dataset.stok,
             jumlah,
             'produk'
         );
@@ -387,11 +428,17 @@ document.getElementById('purchase-form').addEventListener('submit', async functi
     
     const tanggalPembelian = document.getElementById('tanggal_pembelian').value;
     const namaSupplier = document.getElementById('nama_supplier').value;
-    const noInvoice = document.getElementById('no_invoice').value;
-    const metodePembayaran = document.getElementById('metode_pembayaran').value;
+    const nomorInvoice = document.getElementById('nomor_invoice').value;
     
-    if (!tanggalPembelian || !namaSupplier || !noInvoice || !metodePembayaran) {
+    if (!tanggalPembelian || !namaSupplier || !nomorInvoice) {
         alert('Mohon lengkapi semua data pembelian!');
+        return;
+    }
+    
+    // Validasi harga beli
+    const invalidPrices = cart.filter(item => !item.harga_beli || item.harga_beli <= 0);
+    if (invalidPrices.length > 0) {
+        alert('Mohon isi harga beli untuk semua item!');
         return;
     }
     
@@ -401,8 +448,11 @@ document.getElementById('purchase-form').addEventListener('submit', async functi
             id: String(item.id),
             type: String(item.type),
             nama: String(item.nama),
-            harga_beli: Number(item.harga_beli),
+            kategori: String(item.kategori),
+            brand: String(item.brand),
+            stok_saat_ini: Number(item.stok_saat_ini),
             jumlah: Number(item.jumlah),
+            harga_beli: Number(item.harga_beli),
             total: Number(item.harga_beli * item.jumlah)
         };
         
@@ -427,8 +477,7 @@ document.getElementById('purchase-form').addEventListener('submit', async functi
     const data = {
         tanggal_pembelian: tanggalPembelian,
         nama_supplier: namaSupplier,
-        no_invoice: noInvoice,
-        metode_pembayaran: metodePembayaran,
+        nomor_invoice: nomorInvoice,
         total_pembelian: totalPembelian,
         items: formattedItems
     };
@@ -451,7 +500,7 @@ document.getElementById('purchase-form').addEventListener('submit', async functi
         console.log('Response dari server:', result);
         
         if (result.success) {
-            alert('Transaksi pembelian berhasil disimpan!\nID Pembelian: ' + result.data.id_pembelian);
+            alert('Pembelian berhasil disimpan!\nID Pembelian: ' + result.data.id_pembelian);
             
             localStorage.removeItem('purchaseCart');
             cart = [];
@@ -461,17 +510,20 @@ document.getElementById('purchase-form').addEventListener('submit', async functi
             
             updateSummary();
             
+            // Redirect atau reload jika diperlukan
+            // window.location.href = '{{ route("purchase.index") }}';
+            
         } else {
-            alert('Gagal menyimpan transaksi: ' + (result.message || 'Terjadi kesalahan'));
+            alert('Gagal menyimpan pembelian: ' + (result.message || 'Terjadi kesalahan'));
             console.error('Error detail:', result);
         }
         
     } catch (error) {
         console.error('Error:', error);
-        alert('Terjadi kesalahan saat menyimpan transaksi pembelian!');
+        alert('Terjadi kesalahan saat menyimpan pembelian!');
     }
 });
 </script>
 
 </body>
-</html>  
+</html>

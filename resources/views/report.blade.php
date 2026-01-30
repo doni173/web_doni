@@ -12,7 +12,7 @@
 @include('layouts.sidebar')
 @include('layouts.navbar')
 
-
+<body>
 <!-- resources/views/report.blade.php -->
 <div class="container">
     <div class="main-content">
@@ -71,3 +71,4 @@
         </table>
     </div>
 </div>
+</body>

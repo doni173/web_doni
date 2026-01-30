@@ -41,6 +41,6 @@
                 <li><a href="#"><i class="bi bi-clock"></i>Beli</a></li> <!-- Placeholder for route -->
                 
             </ul>
-        </ul>
+        </ul>   
     </nav>
 </div>

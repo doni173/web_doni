@@ -5,37 +5,51 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Models\Item;
+use App\Models\Purchase;
+use App\Models\PurchaseDetails;
 use Exception;
 
 class PurchaseController extends Controller
 {
     /**
      * Display a listing of the resource.
+     * Menampilkan halaman pembelian dengan daftar produk
      */
     public function index(Request $request)
     {
         try {
-            // Query untuk produk dengan search
-            $query = DB::table('produk')
-                ->select('id_produk', 'nama_produk', 'harga_beli', 'stok')
-                ->where('status', 'aktif');
-
+            // Query untuk search produk
+            $query = Item::with(['kategori', 'brand']);
+            
             // Search functionality
             if ($request->has('q_barang') && $request->q_barang != '') {
-                $query->where('nama_produk', 'like', '%' . $request->q_barang . '%');
+                $searchTerm = $request->q_barang;
+                $query->where(function($q) use ($searchTerm) {
+                    $q->where('nama_produk', 'like', '%' . $searchTerm . '%')
+                      ->orWhereHas('kategori', function($q) use ($searchTerm) {
+                          $q->where('kategori', 'like', '%' . $searchTerm . '%');
+                      })
+                      ->orWhereHas('brand', function($q) use ($searchTerm) {
+                          $q->where('brand', 'like', '%' . $searchTerm . '%');
+                      });
+                });
             }
-
+            
+            // Ambil semua produk
             $items = $query->orderBy('nama_produk', 'asc')->get();
-
+            
             return view('purchase.index', compact('items'));
+            
         } catch (Exception $e) {
-            Log::error('Error in PurchaseController@index: ' . $e->getMessage());
-            return back()->with('error', 'Terjadi kesalahan saat memuat data');
+            Log::error('Error loading purchase page: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memuat halaman pembelian');
         }
     }
 
     /**
      * Store a newly created resource in storage.
+     * Menyimpan transaksi pembelian baru
      */
     public function store(Request $request)
     {
@@ -44,94 +58,89 @@ class PurchaseController extends Controller
             $validated = $request->validate([
                 'tanggal_pembelian' => 'required|date',
                 'nama_supplier' => 'required|string|max:255',
-                'no_invoice' => 'required|string|max:100',
-                'metode_pembayaran' => 'required|in:tunai,transfer,kredit',
+                'nomor_invoice' => 'required|string|max:100',
                 'total_pembelian' => 'required|numeric|min:0',
                 'items' => 'required|array|min:1',
                 'items.*.id' => 'required',
                 'items.*.type' => 'required|string',
                 'items.*.nama' => 'required|string',
+                'items.*.jumlah' => 'required|numeric|min:1',
                 'items.*.harga_beli' => 'required|numeric|min:0',
-                'items.*.jumlah' => 'required|integer|min:1',
                 'items.*.total' => 'required|numeric|min:0',
             ]);
 
+            // Log untuk debugging
+            Log::info('Purchase Request Data:', $validated);
+
             DB::beginTransaction();
 
-            // Generate ID Pembelian
-            $lastPurchase = DB::table('pembelian')
-                ->orderBy('id_pembelian', 'desc')
-                ->first();
-
-            if ($lastPurchase) {
-                $lastNumber = intval(substr($lastPurchase->id_pembelian, 3));
-                $newNumber = $lastNumber + 1;
-            } else {
-                $newNumber = 1;
-            }
-            $idPembelian = 'PB-' . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
-
-            // Insert ke tabel pembelian
-            DB::table('pembelian')->insert([
-                'id_pembelian' => $idPembelian,
-                'tanggal_pembelian' => $validated['tanggal_pembelian'],
-                'nama_supplier' => $validated['nama_supplier'],
-                'no_invoice' => $validated['no_invoice'],
-                'metode_pembayaran' => $validated['metode_pembayaran'],
-                'total_pembelian' => $validated['total_pembelian'],
-                'status' => 'selesai',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            // Insert detail pembelian dan update stok
-            foreach ($validated['items'] as $item) {
-                // Insert detail pembelian
-                DB::table('detail_pembelian')->insert([
-                    'id_pembelian' => $idPembelian,
-                    'id_produk' => $item['id'],
-                    'nama_produk' => $item['nama'],
-                    'harga_beli' => $item['harga_beli'],
-                    'jumlah' => $item['jumlah'],
-                    'subtotal' => $item['total'],
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-
-                // Update stok produk (tambah stok)
-                DB::table('produk')
-                    ->where('id_produk', $item['id'])
-                    ->increment('stok', $item['jumlah']);
-
-                // Log pergerakan stok
-                DB::table('log_stok')->insert([
-                    'id_produk' => $item['id'],
-                    'jenis_transaksi' => 'pembelian',
-                    'referensi_id' => $idPembelian,
-                    'jumlah' => $item['jumlah'],
-                    'stok_sebelum' => DB::table('produk')->where('id_produk', $item['id'])->value('stok') - $item['jumlah'],
-                    'stok_sesudah' => DB::table('produk')->where('id_produk', $item['id'])->value('stok'),
-                    'keterangan' => 'Pembelian dari ' . $validated['nama_supplier'],
-                    'created_at' => now(),
-                ]);
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Transaksi pembelian berhasil disimpan',
-                'data' => [
-                    'id_pembelian' => $idPembelian,
+            try {
+                // 1. Simpan data pembelian utama
+                $pembelian = Pembelian::create([
                     'tanggal_pembelian' => $validated['tanggal_pembelian'],
                     'nama_supplier' => $validated['nama_supplier'],
+                    'nomor_invoice' => $validated['nomor_invoice'],
                     'total_pembelian' => $validated['total_pembelian'],
-                ]
-            ]);
+                    'status' => 'completed',
+                    'created_by' => auth()->id() ?? 1, // ID user yang login
+                ]);
+
+                Log::info('Pembelian created:', ['id' => $pembelian->id_pembelian]);
+
+                // 2. Simpan detail pembelian dan update stok
+                foreach ($validated['items'] as $item) {
+                    // Simpan detail pembelian
+                    $detail = PembelianDetail::create([
+                        'id_pembelian' => $pembelian->id_pembelian,
+                        'id_produk' => $item['id'],
+                        'jumlah' => $item['jumlah'],
+                        'harga_beli' => $item['harga_beli'],
+                        'subtotal' => $item['total'],
+                    ]);
+
+                    Log::info('Purchase detail created:', [
+                        'detail_id' => $detail->id,
+                        'produk_id' => $item['id']
+                    ]);
+
+                    // 3. Update stok produk
+                    $produk = Produk::findOrFail($item['id']);
+                    $stokLama = $produk->stok;
+                    $stokBaru = $stokLama + $item['jumlah'];
+                    
+                    $produk->update([
+                        'stok' => $stokBaru,
+                        'harga_beli' => $item['harga_beli'], // Update harga beli terbaru
+                    ]);
+
+                    Log::info('Stock updated:', [
+                        'produk' => $produk->nama_produk,
+                        'stok_lama' => $stokLama,
+                        'jumlah_beli' => $item['jumlah'],
+                        'stok_baru' => $stokBaru
+                    ]);
+                }
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pembelian berhasil disimpan',
+                    'data' => [
+                        'id_pembelian' => $pembelian->id_pembelian,
+                        'nomor_invoice' => $pembelian->nomor_invoice,
+                        'total_pembelian' => $pembelian->total_pembelian,
+                    ]
+                ], 200);
+
+            } catch (Exception $e) {
+                DB::rollBack();
+                Log::error('Database transaction error: ' . $e->getMessage());
+                throw $e;
+            }
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            DB::rollBack();
-            Log::error('Validation error in PurchaseController@store: ' . json_encode($e->errors()));
+            Log::error('Validation error:', $e->errors());
             return response()->json([
                 'success' => false,
                 'message' => 'Data tidak valid',
@@ -139,136 +148,143 @@ class PurchaseController extends Controller
             ], 422);
 
         } catch (Exception $e) {
-            DB::rollBack();
-            Log::error('Error in PurchaseController@store: ' . $e->getMessage());
+            Log::error('Purchase store error: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
             
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menyimpan transaksi: ' . $e->getMessage()
+                'message' => 'Gagal menyimpan pembelian: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
      * Display the specified resource.
+     * Menampilkan detail pembelian
      */
-    public function show(string $id)
+    public function show($id)
     {
         try {
-            $purchase = DB::table('pembelian')
-                ->where('id_pembelian', $id)
-                ->first();
-
-            if (!$purchase) {
-                return back()->with('error', 'Data pembelian tidak ditemukan');
-            }
-
-            $details = DB::table('detail_pembelian')
-                ->where('id_pembelian', $id)
-                ->get();
-
-            return view('purchase.show', compact('purchase', 'details'));
+            $pembelian = Pembelian::with(['details.produk'])
+                ->findOrFail($id);
+            
+            return view('purchase.show', compact('pembelian'));
+            
         } catch (Exception $e) {
-            Log::error('Error in PurchaseController@show: ' . $e->getMessage());
-            return back()->with('error', 'Terjadi kesalahan saat memuat data');
+            Log::error('Error loading purchase detail: ' . $e->getMessage());
+            return back()->with('error', 'Data pembelian tidak ditemukan');
         }
     }
 
     /**
-     * Display purchase history/list
+     * Show the history of purchases
+     * Menampilkan riwayat pembelian
      */
     public function history(Request $request)
     {
         try {
-            $query = DB::table('pembelian')
-                ->orderBy('tanggal_pembelian', 'desc')
-                ->orderBy('created_at', 'desc');
-
-            // Search by supplier or invoice
-            if ($request->has('q') && $request->q != '') {
-                $query->where(function($q) use ($request) {
-                    $q->where('nama_supplier', 'like', '%' . $request->q . '%')
-                      ->orWhere('no_invoice', 'like', '%' . $request->q . '%')
-                      ->orWhere('id_pembelian', 'like', '%' . $request->q . '%');
-                });
-            }
-
+            $query = Pembelian::with(['details.produk']);
+            
             // Filter by date range
             if ($request->has('start_date') && $request->start_date != '') {
-                $query->where('tanggal_pembelian', '>=', $request->start_date);
+                $query->whereDate('tanggal_pembelian', '>=', $request->start_date);
             }
+            
             if ($request->has('end_date') && $request->end_date != '') {
-                $query->where('tanggal_pembelian', '<=', $request->end_date);
+                $query->whereDate('tanggal_pembelian', '<=', $request->end_date);
             }
-
-            // Filter by payment method
-            if ($request->has('metode') && $request->metode != '') {
-                $query->where('metode_pembayaran', $request->metode);
+            
+            // Filter by supplier
+            if ($request->has('supplier') && $request->supplier != '') {
+                $query->where('nama_supplier', 'like', '%' . $request->supplier . '%');
             }
-
-            $purchases = $query->paginate(20);
-
+            
+            // Filter by invoice
+            if ($request->has('invoice') && $request->invoice != '') {
+                $query->where('nomor_invoice', 'like', '%' . $request->invoice . '%');
+            }
+            
+            $purchases = $query->orderBy('tanggal_pembelian', 'desc')
+                ->paginate(20);
+            
             return view('purchase.history', compact('purchases'));
+            
         } catch (Exception $e) {
-            Log::error('Error in PurchaseController@history: ' . $e->getMessage());
-            return back()->with('error', 'Terjadi kesalahan saat memuat data');
+            Log::error('Error loading purchase history: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memuat riwayat pembelian');
         }
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete purchase transaction
+     * Menghapus transaksi pembelian (opsional, hati-hati dengan stok)
      */
-    public function destroy(string $id)
+    public function destroy($id)
     {
         try {
             DB::beginTransaction();
-
-            // Get purchase details before deleting
-            $details = DB::table('detail_pembelian')
-                ->where('id_pembelian', $id)
-                ->get();
-
-            // Restore stock for each item
-            foreach ($details as $detail) {
-                DB::table('produk')
-                    ->where('id_produk', $detail->id_produk)
-                    ->decrement('stok', $detail->jumlah);
-
-                // Log stock movement
-                DB::table('log_stok')->insert([
-                    'id_produk' => $detail->id_produk,
-                    'jenis_transaksi' => 'pembatalan_pembelian',
-                    'referensi_id' => $id,
-                    'jumlah' => -$detail->jumlah,
-                    'stok_sebelum' => DB::table('produk')->where('id_produk', $detail->id_produk)->value('stok') + $detail->jumlah,
-                    'stok_sesudah' => DB::table('produk')->where('id_produk', $detail->id_produk)->value('stok'),
-                    'keterangan' => 'Pembatalan pembelian ' . $id,
-                    'created_at' => now(),
+            
+            $pembelian = Pembelian::with('details')->findOrFail($id);
+            
+            // Kembalikan stok sebelum menghapus
+            foreach ($pembelian->details as $detail) {
+                $produk = Produk::findOrFail($detail->id_produk);
+                $produk->update([
+                    'stok' => $produk->stok - $detail->jumlah
                 ]);
             }
-
-            // Delete details
-            DB::table('detail_pembelian')->where('id_pembelian', $id)->delete();
-
-            // Delete purchase
-            DB::table('pembelian')->where('id_pembelian', $id)->delete();
-
+            
+            // Hapus detail dan pembelian
+            PembelianDetail::where('id_pembelian', $id)->delete();
+            $pembelian->delete();
+            
             DB::commit();
-
+            
             return response()->json([
                 'success' => true,
-                'message' => 'Transaksi pembelian berhasil dihapus'
+                'message' => 'Pembelian berhasil dihapus'
             ]);
-
+            
         } catch (Exception $e) {
             DB::rollBack();
-            Log::error('Error in PurchaseController@destroy: ' . $e->getMessage());
+            Log::error('Error deleting purchase: ' . $e->getMessage());
             
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menghapus transaksi'
+                'message' => 'Gagal menghapus pembelian'
             ], 500);
+        }
+    }
+
+    /**
+     * Generate purchase report
+     * Menghasilkan laporan pembelian
+     */
+    public function report(Request $request)
+    {
+        try {
+            $startDate = $request->get('start_date', date('Y-m-01'));
+            $endDate = $request->get('end_date', date('Y-m-d'));
+            
+            $purchases = Pembelian::with(['details.produk'])
+                ->whereBetween('tanggal_pembelian', [$startDate, $endDate])
+                ->orderBy('tanggal_pembelian', 'desc')
+                ->get();
+            
+            $summary = [
+                'total_transaksi' => $purchases->count(),
+                'total_pembelian' => $purchases->sum('total_pembelian'),
+                'total_item' => $purchases->sum(function($p) {
+                    return $p->details->sum('jumlah');
+                }),
+                'suppliers' => $purchases->pluck('nama_supplier')->unique()->count(),
+            ];
+            
+            return view('purchase.report', compact('purchases', 'summary', 'startDate', 'endDate'));
+            
+        } catch (Exception $e) {
+            Log::error('Error generating purchase report: ' . $e->getMessage());
+            return back()->with('error', 'Gagal membuat laporan');
         }
     }
 }
