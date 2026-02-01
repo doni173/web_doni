@@ -49,7 +49,7 @@
                                 {{ $item->stok }}
                             </span>
                         </td>
-                        <td>Rp {{ number_format($item->modal, 0, ',', '.') }}</td>
+                        <td>Rp {{ number_format($item->harga_beli, 0, ',', '.') }}</td>
                         <td>{{ $item->supplier ?? '-' }}</td>
                         <td>
                             <button type="button" class="btn btn-primary btn-purchase" 
@@ -389,38 +389,36 @@
 @endpush
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    loadPurchaseFromLocalStorage();
-    updateSummary();
-});
+/* ================== GLOBAL ================== */
+const modal = document.getElementById('purchaseModal');
 
 let purchaseCart = [];
 let totalBiaya = 0;
 
-function savePurchaseToLocalStorage() {
+/* ================== LOAD ================== */
+document.addEventListener('DOMContentLoaded', function () {
+    const saved = localStorage.getItem('purchaseCart');
+    if (saved) {
+        purchaseCart = JSON.parse(saved);
+    }
+    updateSummary();
+});
+
+/* ================== STORAGE ================== */
+function saveCart() {
     localStorage.setItem('purchaseCart', JSON.stringify(purchaseCart));
 }
 
-function loadPurchaseFromLocalStorage() {
-    const savedCart = localStorage.getItem('purchaseCart');
-    if (savedCart) {
-        try {
-            purchaseCart = JSON.parse(savedCart);
-        } catch (e) {
-            purchaseCart = [];
-        }
-    }
-}
-
+/* ================== SUMMARY ================== */
 function updateSummary() {
     totalBiaya = 0;
     const tbody = document.getElementById('summary-body');
     tbody.innerHTML = '';
 
     purchaseCart.forEach(item => {
-        const totalItem = item.harga_beli * item.jumlah_beli;
-        const stokBaru = parseInt(item.stok_lama) + parseInt(item.jumlah_beli);
-        totalBiaya += totalItem;
+        const total = item.harga_beli * item.jumlah_beli;
+        const stokBaru = item.stok_lama + item.jumlah_beli;
+        totalBiaya += total;
 
         tbody.innerHTML += `
             <tr>
@@ -430,105 +428,122 @@ function updateSummary() {
                 <td>${item.jumlah_beli}</td>
                 <td>${stokBaru}</td>
                 <td>Rp ${item.harga_beli.toLocaleString('id-ID')}</td>
-                <td>Rp ${totalItem.toLocaleString('id-ID')}</td>
-                <td><button type="button" class="btn btn-danger remove-item" data-id="${item.id}">Hapus</button></td>
+                <td>Rp ${total.toLocaleString('id-ID')}</td>
+                <td>
+                    <button class="btn btn-danger remove-item" data-id="${item.id}">Hapus</button>
+                </td>
             </tr>
         `;
     });
 
-    document.getElementById('total_biaya').innerText = 'Rp. ' + totalBiaya.toLocaleString('id-ID');
+    document.getElementById('total_biaya').innerText =
+        'Rp ' + totalBiaya.toLocaleString('id-ID');
 }
 
-document.querySelectorAll('.btn-purchase').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const id = this.dataset.id;
-        const name = this.dataset.name;
-        const stock = this.dataset.stock;
-        const price = this.dataset.price || 0;
+/* ================== OPEN MODAL ================== */
+document.addEventListener('click', function (e) {
+    if (e.target.classList.contains('btn-purchase')) {
+        const btn = e.target;
 
-        document.getElementById('modal-product-id').value = id;
-        document.getElementById('modal-product-name').value = name;
-        document.getElementById('modal-current-stock').value = stock;
-        document.getElementById('modal-product-price').value = price;
+        document.getElementById('modal-product-id').value = btn.dataset.id;
+        document.getElementById('modal-product-name').value = btn.dataset.name;
+        document.getElementById('modal-current-stock').value = btn.dataset.stock;
+        document.getElementById('modal-product-price').value = btn.dataset.price;
         document.getElementById('modal-purchase-qty').value = 1;
 
         calculateModalTotal();
-
         modal.style.display = 'block';
-    });
-});
-
-document.querySelector('.close').addEventListener('click', function() {
-    modal.style.display = 'none';
-});
-
-window.addEventListener('click', function(e) {
-    if (e.target === modal) {
-        modal.style.display = 'none';
     }
 });
 
-document.getElementById('modal-purchase-qty').addEventListener('input', calculateModalTotal);
+/* ================== CLOSE MODAL ================== */
+document.querySelector('.close').onclick = () => modal.style.display = 'none';
+
+window.onclick = e => {
+    if (e.target === modal) modal.style.display = 'none';
+};
+
+/* ================== MODAL TOTAL ================== */
+document.getElementById('modal-purchase-qty').oninput = calculateModalTotal;
+document.getElementById('modal-product-price').oninput = calculateModalTotal;
 
 function calculateModalTotal() {
-    const qty = parseInt(document.getElementById('modal-purchase-qty').value) || 0;
-    const price = parseFloat(document.getElementById('modal-product-price').value) || 0;
-    const total = qty * price;
-    document.getElementById('modal-total-cost').value = 'Rp ' + total.toLocaleString('id-ID');
+    const qty = parseInt(modal.querySelector('#modal-purchase-qty').value) || 0;
+    const price = parseInt(modal.querySelector('#modal-product-price').value) || 0;
+    modal.querySelector('#modal-total-cost').value =
+        'Rp ' + (qty * price).toLocaleString('id-ID');
 }
 
-document.getElementById('add-to-summary-btn').addEventListener('click', function() {
-    const id = document.getElementById('modal-product-id').value;
-    const nama = document.getElementById('modal-product-name').value;
-    const stokLama = document.getElementById('modal-current-stock').value;
-    const jumlahBeli = document.getElementById('modal-purchase-qty').value;
-    const hargaBeli = document.getElementById('modal-product-price').value;
+/* ================== ADD ITEM ================== */
+document.getElementById('add-to-summary-btn').onclick = () => {
+    const item = {
+        id: modal.querySelector('#modal-product-id').value,
+        nama: modal.querySelector('#modal-product-name').value,
+        stok_lama: parseInt(modal.querySelector('#modal-current-stock').value),
+        jumlah_beli: parseInt(modal.querySelector('#modal-purchase-qty').value),
+        harga_beli: parseInt(modal.querySelector('#modal-product-price').value),
+    };
 
-    if (!hargaBeli || parseFloat(hargaBeli) <= 0) {
-        alert('Mohon isi harga beli yang valid!');
+    if (!item.harga_beli || item.harga_beli <= 0) {
+        alert('Harga beli tidak valid');
         return;
     }
 
-    const totalBiaya = jumlahBeli * hargaBeli;
-    const stokBaru = parseInt(stokLama) + parseInt(jumlahBeli);
-
-    const rowHTML = `
-        <tr>
-            <td>${id}</td>
-            <td>${nama}</td>
-            <td>${stokLama}</td>
-            <td>${jumlahBeli}</td>
-            <td>${stokBaru}</td>
-            <td>Rp ${hargaBeli.toLocaleString('id-ID')}</td>
-            <td>Rp ${totalBiaya.toLocaleString('id-ID')}</td>
-            <td><button type="button" class="btn btn-danger remove-item" data-id="${id}">Hapus</button></td>
-        </tr>
-    `;
-
-    document.getElementById('summary-body').insertAdjacentHTML('beforeend', rowHTML);
-    updateTotalBiaya();
-
-    modal.style.display = 'none';
-});
-
-function updateTotalBiaya() {
-    totalBiaya = 0;
-    const rows = document.querySelectorAll('#summary-body tr');
-    rows.forEach(row => {
-        const total = parseFloat(row.cells[6].textContent.replace('Rp', '').replace(/\./g, '')) || 0;
-        totalBiaya += total;
-    });
-    document.getElementById('total_biaya').textContent = 'Rp ' + totalBiaya.toLocaleString('id-ID');
-}
-
-document.getElementById('summary-body').addEventListener('click', function(e) {
-    if (e.target && e.target.classList.contains('remove-item')) {
-        e.preventDefault();
-        const row = e.target.closest('tr');
-        row.remove();
-        updateTotalBiaya();
+    const idx = purchaseCart.findIndex(p => p.id === item.id);
+    if (idx !== -1) {
+        purchaseCart[idx].jumlah_beli += item.jumlah_beli;
+    } else {
+        purchaseCart.push(item);
     }
-});
+
+    saveCart();
+    updateSummary();
+    modal.style.display = 'none';
+};
+
+/* ================== REMOVE ITEM ================== */
+document.getElementById('summary-body').onclick = e => {
+    if (e.target.classList.contains('remove-item')) {
+        purchaseCart = purchaseCart.filter(i => i.id !== e.target.dataset.id);
+        saveCart();
+        updateSummary();
+    }
+};
+document.getElementById('purchase-form').onsubmit = e => {
+    e.preventDefault();
+
+    fetch("{{ route('purchase.store') }}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": document.querySelector('meta[name=csrf-token]').content
+        },
+        body: JSON.stringify({
+            tanggal_pembelian: document.getElementById('tanggal_pembelian').value,
+            supplier: document.getElementById('supplier').value,
+            keterangan: document.getElementById('keterangan').value,
+            total_biaya: totalBiaya,
+            items: purchaseCart
+        })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Gagal menyimpan');
+        return res.json();
+    })
+    .then(res => {
+        alert(res.message);
+
+        if (res.success) {
+            localStorage.removeItem('purchaseCart');
+            location.reload();
+        }
+    })
+    .catch(err => {
+        alert('ERROR: ' + err.message);
+        console.error(err);
+    });
+};
+
 </script>
 
 </body>

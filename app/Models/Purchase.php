@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Pembelian extends Model
+class Purchase extends Model
 {
     use HasFactory;
 
@@ -31,10 +31,11 @@ class Pembelian extends Model
     /**
      * Relasi ke detail pembelian
      */
-    public function details()
-    {
-        return $this->hasMany(PembelianDetail::class, 'id_pembelian', 'id_pembelian');
-    }
+   public function details()
+{
+    return $this->hasMany(PurchaseDetail::class, 'id_pembelian', 'id_pembelian');
+}
+
 
     /**
      * Relasi ke user yang membuat transaksi

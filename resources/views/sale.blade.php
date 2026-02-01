@@ -36,23 +36,37 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($items as $item)
-                        <tr>
-                            <td>{{ $item->nama_produk }}</td>
-                            <td>{{ number_format($item->harga_setelah_diskon, 0, ',', '.') }}</td>
-                            <td>
-                                <input type="number" name="qty" class="form-control qty" data-id="{{ $item->id_produk }}" value="1" min="1" max="100">
-                            </td>
-                            <td>
-                                <button type="button" class="btn btn-success add-item" 
-                                    data-id="{{ $item->id_produk }}" 
-                                    data-name="{{ $item->nama_produk }}" 
-                                    data-price="{{ $item->harga_jual }}" 
-                                    data-discount="{{ $item->diskon }}"
-                                    data-type="produk">Tambah</button>
-                            </td>
-                        </tr>
-                        @endforeach
+                      @foreach($items as $item)
+<tr>
+    <td>{{ $item->nama_produk }}</td>
+    <td>{{ number_format($item->harga_setelah_diskon, 0, ',', '.') }}</td>
+    <td>
+        <input type="number" 
+               name="qty" 
+               class="form-control qty"
+               data-id="{{ $item->id_produk }}" 
+               value="1" 
+               min="1"
+               max="{{ $item->stok }}"
+               {{ $item->stok == 0 ? 'disabled' : '' }}>
+    </td>
+    <td>
+        <button type="button"
+            class="btn btn-success add-item"
+            data-id="{{ $item->id_produk }}"
+            data-name="{{ $item->nama_produk }}"
+            data-price="{{ $item->harga_jual }}"
+            data-discount="{{ $item->diskon }}"
+            data-stok="{{ $item->stok }}"
+            data-type="produk"
+            {{ $item->stok == 0 ? 'disabled' : '' }}>
+            
+            {{ $item->stok == 0 ? 'Stok Habis' : 'Tambah' }}
+        </button>
+    </td>
+</tr>
+@endforeach
+
                     </tbody>
                 </table>
             </div>

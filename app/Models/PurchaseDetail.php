@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class PembelianDetail extends Model
+class PurchaseDetail extends Model
 {
     use HasFactory;
 
@@ -30,10 +30,10 @@ class PembelianDetail extends Model
     /**
      * Relasi ke pembelian utama
      */
-    public function pembelian()
-    {
-        return $this->belongsTo(Pembelian::class, 'id_pembelian', 'id_pembelian');
-    }
+  public function pembelian()
+{
+    return $this->belongsTo(Purchase::class, 'id_pembelian', 'id_pembelian');
+}
 
     /**
      * Relasi ke produk
