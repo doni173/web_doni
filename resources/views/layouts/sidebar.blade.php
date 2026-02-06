@@ -1,46 +1,131 @@
-<head>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-</head>
-
-<div class="sidebar">
-    <div class="user-info">
-        <img src="https://www.w3schools.com/w3images/avatar2.png" alt="User" class="user-avatar">
-        <p>  {{ Auth::user()->nama_user }}</p> <!-- Mengambil nama_user dari pengguna yang login -->
+<aside class="sidebar">
+    <!-- User Profile Section -->
+    <div class="sidebar-user">
+        <div class="user-avatar">
+            <img src="https://www.w3schools.com/w3images/avatar2.png" alt="User Avatar">
+            <div class="user-status"></div>
+        </div>
+        <div class="user-details">
+            <h3 class="user-name">{{ Auth::user()->nama_user }}</h3>
+            <p class="user-role">Administrator</p>
+        </div>
     </div>
-    <nav>
-        <ul>
-            <li><a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i>Dashboard</a></li>
-            <!-- Master Data Section -->
-            <div class="sidebar-section"><li>Master Data</li></div>
-            <ul>
-                <li><a href="{{ route('categories.index') }}"><i class="bi bi-tag"></i>Kategori</a></li>
-                <li><a href="{{ route('brands.index') }}"><i class="bi bi-box-seam"></i>Brand</a></li>
-                <li><a href="{{ route('items.index') }}"><i class="bi bi-box"></i>Barang</a></li>
-                <li><a href="{{ route('services.index') }}"><i class="bi bi-gear"></i>Service</a></li>
-                <li><a href="{{ route('users.index') }}"><i class="bi bi-person"></i>User </a></li>
-            </ul>
 
-            <!-- Report Section -->
-            <div class="sidebar-section"><li>Laporan</li></div>
-            <ul>
-                <li><a href="{{ route('sales.report') }}"><i class="bi bi-file-earmark-spreadsheet"></i>Laporan</a></li> <!-- Placeholder for route -->
-            </ul>
+    <!-- Navigation Menu -->
+    <nav class="sidebar-nav">
+        <!-- Dashboard -->
+        <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+            <div class="nav-icon">
+                <i class="bi bi-speedometer2"></i>
+            </div>
+            <span class="nav-label">Dashboard</span>
+        </a>
 
-            <!-- Transaksi Section -->
-            <div class="sidebar-section"><li>Transaksi</li></div>
-            <ul>
-                <li><a href="{{ route('sale.index') }}"><i class="bi bi-cart-fill"></i>Jual</a></li>
-                <li><a href="{{ route('purchase.index') }}"><i class="bi bi-cart-check"></i>Beli</a></li> <!-- Placeholder for route -->
-                
-            </ul>
+        <!-- Master Data Section -->
+        <div class="nav-section">
+            <span class="section-title">Master Data</span>
+        </div>
 
-            <!-- History Section -->
-            <div class="sidebar-section"><li>Riwayat</li></div>
-            <ul>
-                <li><a href="{{ route('sale.history') }}"><i class="bi bi-clock-history"></i>jual</a></li>
-                <li><a href="#"><i class="bi bi-clock"></i>Beli</a></li> <!-- Placeholder for route -->
-                
-            </ul>
-        </ul>   
+        <a href="{{ route('categories.index') }}" class="nav-item {{ request()->routeIs('categories.*') ? 'active' : '' }}">
+            <div class="nav-icon">
+                <i class="bi bi-grid-3x3-gap"></i>
+            </div>
+            <span class="nav-label">Kategori</span>
+        </a>
+
+        <a href="{{ route('brands.index') }}" class="nav-item {{ request()->routeIs('brands.*') ? 'active' : '' }}">
+            <div class="nav-icon">
+                <i class="bi bi-bookmark-star"></i>
+            </div>
+            <span class="nav-label">Brand</span>
+        </a>
+
+        <a href="{{ route('items.index') }}" class="nav-item {{ request()->routeIs('items.*') ? 'active' : '' }}">
+            <div class="nav-icon">
+                <i class="bi bi-box-seam"></i>
+            </div>
+            <span class="nav-label">Barang</span>
+        </a>
+
+        <a href="{{ route('services.index') }}" class="nav-item {{ request()->routeIs('services.*') ? 'active' : '' }}">
+            <div class="nav-icon">
+                <i class="bi bi-tools"></i>
+            </div>
+            <span class="nav-label">Service</span>
+        </a>
+
+        <a href="{{ route('suppliers.index') }}" class="nav-item {{ request()->routeIs('suppliers.*') ? 'active' : '' }}">
+            <div class="nav-icon">
+                <i class="bi bi-truck"></i>
+            </div>
+            <span class="nav-label">Supplier</span>
+        </a>
+
+        <a href="{{ route('users.index') }}" class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
+            <div class="nav-icon">
+                <i class="bi bi-people"></i>
+            </div>
+            <span class="nav-label">User</span>
+        </a>
+
+         <!-- Laporan Section -->
+        <div class="nav-section">
+            <span class="section-title">Laporan</span>
+        </div>
+
+        <a href="{{ route('sale.report') }}" class="nav-item {{ request()->routeIs('sale.report') ? 'active' : '' }}">
+            <div class="nav-icon">
+                <i class="bi bi-file-earmark-bar-graph"></i>
+            </div>
+            <span class="nav-label">Laporan</span>
+        </a>
+
+        <!-- Transaksi Section -->
+        <div class="nav-section">
+            <span class="section-title">Transaksi</span>
+        </div>
+
+        <a href="{{ route('sale.index') }}" class="nav-item {{ request()->routeIs('sale.index') ? 'active' : '' }}">
+            <div class="nav-icon">
+                <i class="bi bi-cart-check-fill"></i>
+            </div>
+            <span class="nav-label">Penjualan</span>
+        </a>
+
+        <a href="{{ route('purchase.index') }}" class="nav-item {{ request()->routeIs('purchase.index') ? 'active' : '' }}">
+            <div class="nav-icon">
+                <i class="bi bi-bag-plus-fill"></i>
+            </div>
+            <span class="nav-label">Pembelian</span>
+        </a>
+
+        <!-- Riwayat Section -->
+        <div class="nav-section">
+            <span class="section-title">Riwayat</span>
+        </div>
+
+        <a href="{{ route('sale.history') }}" class="nav-item {{ request()->routeIs('sale.history') ? 'active' : '' }}">
+            <div class="nav-icon">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <span class="nav-label">Riwayat Jual</span>
+        </a>
+
+        <a href="{{ route('purchase.history') }}" class="nav-item {{ request()->routeIs('purchase.history') ? 'active' : '' }}">
+            <div class="nav-icon">
+                <i class="bi bi-clock"></i>
+            </div>
+            <span class="nav-label">Riwayat Beli</span>
+        </a>
+
+       
     </nav>
-</div>
+
+    <!-- Sidebar Footer -->
+    <div class="sidebar-footer">
+        <div class="footer-info">
+            <i class="bi bi-shield-check"></i>
+            <span>v1.0.0</span>
+        </div>
+    </div>
+</aside>

@@ -4,547 +4,707 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Pembelian Barang | Sistem Inventory dan Kasir</title>
+    <title>Transaksi Pembelian | Sistem Inventory dan Kasir</title>
+
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
-
 <body>
-@include('layouts.sidebar')
+
 @include('layouts.navbar')
+@include('layouts.sidebar')
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-<div class="container">
-    <div class="container-daftar">
-        <div class="padding">
-            <h2>Pembelian Barang</h2>
-        </div>
+<div class="main-container">
+    <div class="main-content">
 
-        <!-- Form Pencarian -->
-        <div class="search-section">
-            <form action="{{ route('purchase.index') }}" method="GET" class="search-form">
-                <input type="text" class="form-control" placeholder="Cari produk..." name="q" value="{{ request('q') }}" style="width: 300px;">
-                <button type="submit" class="btn-src1">Search</button>
-            </form>
-        </div>
+        <h2>Transaksi Pembelian</h2>
 
-        <!-- Tabel Daftar Produk -->
-        <div class="table-container">
-            <table class="table-main">
-                <thead>
-                    <tr>
-                        <th>Kode Produk</th>
-                        <th>Nama Produk</th>
-                        <th>Stok Saat Ini</th>
-                        <th>Harga Beli</th>
-                        <th>Supplier</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($items as $item)
-                    <tr class="{{ $item->stok < 10 ? 'low-stock' : '' }}">
-                        <td>{{ $item->id_produk }}</td>
-                        <td>{{ $item->nama_produk }}</td>
-                        <td>
-                            <span class="stock-badge {{ $item->stok < 10 ? 'badge-danger' : 'badge-success' }}">
-                                {{ $item->stok }}
-                            </span>
-                        </td>
-                        <td>Rp {{ number_format($item->harga_beli, 0, ',', '.') }}</td>
-                        <td>{{ $item->supplier ?? '-' }}</td>
-                        <td>
-                            <button type="button" class="btn btn-primary btn-purchase" 
-                                data-id="{{ $item->id_produk }}"
-                                data-name="{{ $item->nama_produk }}"
-                                data-stock="{{ $item->stok }}"
-                                data-price="{{ $item->harga_beli }}">
-                                Tambah
-                            </button>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="6" style="text-align: center;">Tidak ada data produk</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Pagination -->
-        <div class="pagination-wrapper">
-            {{ $items->links() }}
-        </div>
-    </div>
-
-    <!-- Ringkasan Pembelian -->
-    <div class="container-ringkasan">
-        <h3>Ringkasan Pembelian</h3>
-        <table class="table-main" id="summary-table">
-            <thead>
-                <tr>
-                    <th>Kode Produk</th>
-                    <th>Nama Produk</th>
-                    <th>Stok Lama</th>
-                    <th>Jumlah Beli</th>
-                    <th>Stok Baru</th>
-                    <th>Harga Beli Satuan</th>
-                    <th>Total Biaya</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody id="summary-body">
-                <!-- Data pembelian akan muncul di sini -->
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Form Penyelesaian Pembelian -->
-    <div class="container-bayar">
-        <form id="purchase-form">
-            @csrf
-            <div class="form-wrapper">     
-                <div class="form-group">
-                    <label for="tanggal_pembelian">Tanggal Pembelian</label>
-                    <input type="date" id="tanggal_pembelian" name="tanggal_pembelian" class="form-control" value="{{ date('Y-m-d') }}" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="supplier">Supplier</label>
-                    <input type="text" id="supplier" name="supplier" class="form-control" placeholder="Nama Supplier" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="keterangan">Keterangan</label>
-                    <input type="text" id="keterangan" name="keterangan" class="form-control" placeholder="Keterangan (opsional)">
-                </div>
+        <!-- ================= DAFTAR PRODUK SECTION ================= -->
+        <div class="section-wrapper">
+            <h3 class="section-title">
+                <i class="bi bi-box-seam"></i> Daftar Produk
+            </h3>
             
-                <div class="form-group">
-                    <h4>Total Biaya: <span id="total_biaya">Rp. 0</span></h4>
+            <div class="search-wrapper">
+                <div class="search-input-wrapper">
+                    <input type="text" 
+                           class="form-control" 
+                           placeholder="Cari produk..." 
+                           id="searchProduct"
+                           autocomplete="off">
+                    <span class="search-icon">
+                        <i class="bi bi-search"></i>
+                    </span>
                 </div>
             </div>
-            <button type="submit" class="btn add">Selesaikan Pembelian</button>
-        </form>
+
+            <div class="table-responsive">
+                <table class="table-main">
+                    <thead>
+                        <tr>
+                            <th>ID Produk</th>
+                            <th>Nama Produk</th>
+                            <th>Stok</th>
+                            <th>Harga Beli</th>
+                            <th>Supplier</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productTableBody">
+                        @forelse ($items as $item)
+                        <tr data-product-search="{{ strtolower($item->nama_produk) }}">
+                            <td data-label="ID Produk">
+                                <span class="id-badge">{{ $item->id_produk }}</span>
+                            </td>
+                            <td data-label="Nama Produk">
+                                <span class="product-name">{{ $item->nama_produk }}</span>
+                            </td>
+                            <td data-label="Stok">
+                                <span class="badge {{ $item->stok == 0 ? 'badge-danger' : ($item->stok < 10 ? 'badge-warning' : 'badge-success') }}">
+                                    {{ $item->stok }} unit
+                                </span>
+                            </td>
+                            <td data-label="Harga Beli">
+                                Rp {{ number_format($item->modal, 0, ',', '.') }}
+                            </td>
+                            <td data-label="Supplier">
+                                {{ $item->supplier->nama_supplier ?? '-' }}
+                            </td>
+                            <td data-label="Aksi">
+                                <button class="btn-add-cart btn-purchase"
+                                        data-id="{{ $item->id_produk }}"
+                                        data-name="{{ $item->nama_produk }}"
+                                        data-stock="{{ $item->stok }}"
+                                        data-price="{{ $item->modal }}">
+                                    <i class="bi bi-plus-circle"></i>
+                                    Tambah
+                                </button>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                <div class="empty-state">
+                                    <i class="bi bi-inbox"></i>
+                                    <p>Tidak ada data produk</p>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <br>
+        <!-- ================= RINGKASAN PEMBELIAN SECTION ================= -->
+        <div class="section-wrapper cart-section">
+            <h3 class="section-title">
+                <i class="bi bi-cart-check"></i> Ringkasan Pembelian
+            </h3>
+
+            <div class="table-responsive">
+                <table class="table-main">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nama</th>
+                            <th>Stok Lama</th>
+                            <th>Jumlah Beli</th>
+                            <th>Stok Baru</th>
+                            <th>Harga</th>
+                            <th>Total</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summary-body">
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <div class="empty-state">
+                                    <i class="bi bi-cart-x"></i>
+                                    <p>Belum ada produk yang ditambahkan</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ================= CHECKOUT FORM ================= -->
+            <div class="checkout-section">
+                <form id="purchase-form">
+                    @csrf
+                    
+                    {{-- PERUBAHAN: Hapus input tanggal manual, gunakan waktu otomatis --}}
+                    {{-- Tampilkan info waktu transaksi saja untuk user --}}
+                    <div class="form-row">
+                        <div class="form-group col-md-12">
+                            <label>
+                                <i class="bi bi-calendar-check"></i> Waktu Transaksi
+                            </label>
+                            <div class="transaction-time-display">
+                                <i class="bi bi-clock"></i>
+                                <span id="current-datetime">{{ \Carbon\Carbon::now('Asia/Jakarta')->translatedFormat('l, d F Y H:i') }} WIB</span>
+                            </div>
+                            <small class="text-muted">Waktu transaksi akan tercatat secara otomatis saat Anda menyelesaikan pembelian</small>
+                        </div>
+                    </div>
+
+                    <div class="summary-section">
+                        <div class="summary-item">
+                            <span class="summary-label">Total Pembelian:</span>
+                            <span class="summary-value" id="total_biaya">Rp 0</span>
+                        </div>
+                    </div>
+
+                    <div class="checkout-actions">
+                        <button type="button" class="btn-clear-cart" onclick="clearPurchaseCart()">
+                            <i class="bi bi-trash"></i> Kosongkan Keranjang
+                        </button>
+                        <button type="submit" class="btn-checkout" id="btnCheckout" disabled>
+                            <i class="bi bi-check-circle"></i> Selesaikan Pembelian
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </div>
 </div>
 
-<!-- Modal Purchase -->
+<!-- ================= MODAL PEMBELIAN ================= -->
 <div id="purchaseModal" class="modal">
     <div class="modal-content">
-        <span class="close">&times;</span>
-        <h3>Pembelian Produk</h3>
-        <form id="modal-purchase-form">
+        <div class="modal-header">
+            <div class="modal-title">
+                <i class="bi bi-cart-plus"></i>
+                <h5>Tambah Pembelian</h5>
+            </div>
+            <button class="close" type="button">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+            <input type="hidden" id="modal-product-id">
+
             <div class="form-group">
                 <label>Nama Produk</label>
                 <input type="text" id="modal-product-name" class="form-control" readonly>
-                <input type="hidden" id="modal-product-id">
             </div>
+
+            <div class="form-group">
+                <label>Supplier</label>
+                <select id="modal-supplier-id" class="form-control" required>
+                    <option value="">-- Pilih Supplier --</option>
+                    @foreach ($suppliers as $s)
+                        <option value="{{ $s->id_supplier }}">{{ $s->nama_supplier }}</option>
+                    @endforeach
+                </select>
+            </div>
+
             <div class="form-group">
                 <label>Stok Saat Ini</label>
                 <input type="number" id="modal-current-stock" class="form-control" readonly>
             </div>
+
             <div class="form-group">
                 <label>Jumlah Beli</label>
-                <input type="number" id="modal-purchase-qty" class="form-control" min="1" value="1" required>
+                <input type="number" id="modal-purchase-qty" class="form-control" value="1" min="1" required>
             </div>
+
             <div class="form-group">
-                <label>Harga Beli Satuan</label>
-                <input type="number" id="modal-product-price" class="form-control" min="0" step="1">
+                <label>Harga Beli</label>
+                <input type="number" id="modal-product-price" class="form-control" min="0" required>
             </div>
-            <div class="form-group">
-                <label>Total Biaya</label>
-                <input type="text" id="modal-total-cost" class="form-control" readonly>
+
+            <div class="modal-footer-custom">
+                <button type="button" class="btn-secondary close-modal">Batal</button>
+                <button type="button" id="add-to-summary-btn" class="btn-primary">
+                    <i class="bi bi-plus-circle"></i> Tambahkan
+                </button>
             </div>
-            <button type="button" id="add-to-summary-btn" class="btn btn-primary">Tambahkan ke Ringkasan</button>
-        </form>
+        </div>
     </div>
 </div>
 
-@push('styles')
-<style>
-    body {
-        font-family: 'Open Sans', sans-serif;
-        background-color: #d6ebff;
-        color: #333;
-    }
+<!-- ================= SWEETALERT ================= -->
+@if(session('success'))
+<script>
+Swal.fire({
+    icon: 'success',
+    title: 'Berhasil',
+    text: '{{ session('success') }}',
+    timer: 2000,
+    showConfirmButton: false
+});
+</script>
+@endif
 
-    .container-daftar {
-        margin-top: 25px;
-        background-color: #fff;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
+@if(session('error'))
+<script>
+Swal.fire({
+    icon: 'error',
+    title: 'Gagal',
+    text: '{{ session('error') }}',
+    timer: 2000,
+    showConfirmButton: false
+});
+</script>
+@endif
 
-    .container-daftar h2 {
-        margin-top: 1px;
-        margin-bottom: 20px;
-    }
-
-    .search-section {
-        margin-bottom: 20px;
-    }
-
-    .search-form {
-        display: flex;
-        gap: 10px;
-    }
-
-    .container-ringkasan {
-        margin-top: 15px;
-        background-color: #fff;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .container-ringkasan h3 {
-        margin-top: 1px;
-        margin-bottom: 15px;
-    }
-
-    .container-bayar {
-        font-family: 'Open Sans', sans-serif;
-        margin-top: 15px;
-        background-color: #fff;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .form-wrapper {
-        display: flex;
-        gap: 15px;
-        flex-wrap: wrap;
-    }
-
-    .form-group {
-        margin-top: 8px;
-        margin-left: 10px;
-        flex: 1;
-        min-width: 200px;
-    }
-
-    .form-group label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: 600;
-    }
-
-    .table-container {
-        margin-bottom: 20px;
-        overflow-x: auto;
-    }
-
-    .table-main {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .table-main th, .table-main td {
-        padding: 12px 15px;
-        text-align: left;
-        border-bottom: 1px solid #ddd;
-    }
-
-    .table-main th {
-        background-color: #007bff;
-        color: #fff;
-        font-weight: 600;
-    }
-
-    .table-main tbody tr:hover {
-        background-color: #f5f5f5;
-    }
-
-    .low-stock {
-        background-color: #fff3cd !important;
-    }
-
-    .stock-badge {
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-weight: 600;
-        font-size: 14px;
-    }
-
-    .badge-danger {
-        background-color: #dc3545;
-        color: white;
-    }
-
-    .badge-success {
-        background-color: #28a745;
-        color: white;
-    }
-
-    .btn {
-        padding: 8px 16px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: all 0.3s;
-    }
-
-    .btn-primary {
-        background-color: #007bff;
-        color: white;
-    }
-
-    .btn-primary:hover {
-        background-color: #0056b3;
-    }
-
-    .btn-danger {
-        background-color: #dc3545;
-        color: white;
-    }
-
-    .btn-danger:hover {
-        background-color: #c82333;
-    }
-
-    .btn.add {
-        background-color: #28a745;
-        color: white;
-        font-size: 16px;
-        padding: 12px 24px;
-        margin-top: 10px;
-    }
-
-    .btn.add:hover {
-        background-color: #218838;
-    }
-
-    .btn-src1 {
-        background-color: #007bff;
-        color: white;
-        padding: 8px 16px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    .btn-src1:hover {
-        background-color: #0056b3;
-    }
-
-    .form-control {
-        width: 100%;
-        padding: 8px;
-        font-size: 14px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-bottom: 2px;
-        margin-top: 2px;
-    }
-
-    /* Modal Styles */
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-    }
-
-    .modal-content {
-        background-color: #fff;
-        margin: 10% auto;
-        padding: 30px;
-        border-radius: 8px;
-        width: 500px;
-        max-width: 90%;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    }
-
-    .modal-content h3 {
-        margin-top: 0;
-        margin-bottom: 20px;
-        color: #333;
-    }
-
-    .close {
-        color: #aaa;
-        float: right;
-        font-size: 28px;
-        font-weight: bold;
-        cursor: pointer;
-    }
-
-    .close:hover,
-    .close:focus {
-        color: #000;
-    }
-
-    .pagination-wrapper {
-        margin-top: 20px;
-        display: flex;
-        justify-content: center;
-    }
-</style>
-@endpush
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-/* ================== GLOBAL ================== */
+// ================= GLOBAL VARIABLES ================= 
 const modal = document.getElementById('purchaseModal');
+const summaryBody = document.getElementById('summary-body');
+const totalBiayaEl = document.getElementById('total_biaya');
 
 let purchaseCart = [];
 let totalBiaya = 0;
 
-/* ================== LOAD ================== */
-document.addEventListener('DOMContentLoaded', function () {
-    const saved = localStorage.getItem('purchaseCart');
-    if (saved) {
-        purchaseCart = JSON.parse(saved);
-    }
-    updateSummary();
-});
-
-/* ================== STORAGE ================== */
-function saveCart() {
-    localStorage.setItem('purchaseCart', JSON.stringify(purchaseCart));
+// ================= UPDATE REAL-TIME CLOCK ================= 
+function updateCurrentDateTime() {
+    const now = new Date();
+    const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZone: 'Asia/Jakarta'
+    };
+    const formattedDate = now.toLocaleDateString('id-ID', options);
+    document.getElementById('current-datetime').textContent = formattedDate + ' WIB';
 }
 
-/* ================== SUMMARY ================== */
-function updateSummary() {
+// Update waktu setiap detik
+setInterval(updateCurrentDateTime, 1000);
+updateCurrentDateTime(); // Panggil sekali saat load
+
+// ================= SIDEBAR TOGGLE ================= 
+function toggleSidebar() {
+    document.querySelector('.sidebar').classList.toggle('open');
+    document.querySelector('.sidebar-overlay').classList.toggle('active');
+}
+
+// ================= SEARCH FUNCTIONALITY ================= 
+$(document).ready(function() {
+    // Search Product
+    $('#searchProduct').on('input', function() {
+        const query = $(this).val().toLowerCase().trim();
+        $('#productTableBody tr').each(function() {
+            const productName = $(this).data('product-search');
+            if (productName && productName.includes(query)) {
+                $(this).show();
+            } else if (productName) {
+                $(this).hide();
+            }
+        });
+    });
+
+    // ================= OPEN MODAL ================= 
+    $(document).on('click', '.btn-purchase', function() {
+        const b = $(this);
+        modal.style.display = 'block';
+
+        document.getElementById('modal-product-id').value = b.data('id');
+        document.getElementById('modal-product-name').value = b.data('name');
+        document.getElementById('modal-current-stock').value = b.data('stock');
+        document.getElementById('modal-product-price').value = b.data('price');
+        document.getElementById('modal-purchase-qty').value = 1;
+        document.getElementById('modal-supplier-id').value = '';
+    });
+
+    // ================= CLOSE MODAL ================= 
+    $('.close, .close-modal').on('click', function() {
+        modal.style.display = 'none';
+    });
+
+    // Close modal ketika click di luar modal
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+
+    // ================= ADD TO CART ================= 
+    $('#add-to-summary-btn').on('click', function() {
+        const supplierId = document.getElementById('modal-supplier-id').value;
+        const qty = document.getElementById('modal-purchase-qty').value;
+        const price = document.getElementById('modal-product-price').value;
+
+        // Validasi input
+        if (!supplierId) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Perhatian',
+                text: 'Pilih supplier terlebih dahulu!',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            return;
+        }
+        if (!qty || qty <= 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Perhatian',
+                text: 'Jumlah beli harus lebih dari 0!',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            return;
+        }
+        if (!price || price <= 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Perhatian',
+                text: 'Harga beli harus lebih dari 0!',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            return;
+        }
+
+        const item = {
+            id: document.getElementById('modal-product-id').value,
+            nama: document.getElementById('modal-product-name').value,
+            supplier_id: supplierId,
+            stok_lama: parseInt(document.getElementById('modal-current-stock').value),
+            jumlah_beli: parseInt(qty),
+            harga: parseInt(price),
+        };
+
+        purchaseCart.push(item);
+        renderPurchaseCart();
+        modal.style.display = 'none';
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Ditambahkan',
+            text: `${item.nama} ditambahkan ke keranjang`,
+            timer: 1000,
+            showConfirmButton: false
+        });
+    });
+});
+
+// ================= RENDER CART ================= 
+function renderPurchaseCart() {
+    summaryBody.innerHTML = '';
     totalBiaya = 0;
-    const tbody = document.getElementById('summary-body');
-    tbody.innerHTML = '';
 
-    purchaseCart.forEach(item => {
-        const total = item.harga_beli * item.jumlah_beli;
-        const stokBaru = item.stok_lama + item.jumlah_beli;
-        totalBiaya += total;
-
-        tbody.innerHTML += `
+    if (purchaseCart.length === 0) {
+        summaryBody.innerHTML = `
             <tr>
-                <td>${item.id}</td>
-                <td>${item.nama}</td>
-                <td>${item.stok_lama}</td>
-                <td>${item.jumlah_beli}</td>
-                <td>${stokBaru}</td>
-                <td>Rp ${item.harga_beli.toLocaleString('id-ID')}</td>
-                <td>Rp ${total.toLocaleString('id-ID')}</td>
-                <td>
-                    <button class="btn btn-danger remove-item" data-id="${item.id}">Hapus</button>
+                <td colspan="8" class="text-center">
+                    <div class="empty-state">
+                        <i class="bi bi-cart-x"></i>
+                        <p>Belum ada produk yang ditambahkan</p>
+                    </div>
                 </td>
             </tr>
         `;
-    });
-
-    document.getElementById('total_biaya').innerText =
-        'Rp ' + totalBiaya.toLocaleString('id-ID');
-}
-
-/* ================== OPEN MODAL ================== */
-document.addEventListener('click', function (e) {
-    if (e.target.classList.contains('btn-purchase')) {
-        const btn = e.target;
-
-        document.getElementById('modal-product-id').value = btn.dataset.id;
-        document.getElementById('modal-product-name').value = btn.dataset.name;
-        document.getElementById('modal-current-stock').value = btn.dataset.stock;
-        document.getElementById('modal-product-price').value = btn.dataset.price;
-        document.getElementById('modal-purchase-qty').value = 1;
-
-        calculateModalTotal();
-        modal.style.display = 'block';
-    }
-});
-
-/* ================== CLOSE MODAL ================== */
-document.querySelector('.close').onclick = () => modal.style.display = 'none';
-
-window.onclick = e => {
-    if (e.target === modal) modal.style.display = 'none';
-};
-
-/* ================== MODAL TOTAL ================== */
-document.getElementById('modal-purchase-qty').oninput = calculateModalTotal;
-document.getElementById('modal-product-price').oninput = calculateModalTotal;
-
-function calculateModalTotal() {
-    const qty = parseInt(modal.querySelector('#modal-purchase-qty').value) || 0;
-    const price = parseInt(modal.querySelector('#modal-product-price').value) || 0;
-    modal.querySelector('#modal-total-cost').value =
-        'Rp ' + (qty * price).toLocaleString('id-ID');
-}
-
-/* ================== ADD ITEM ================== */
-document.getElementById('add-to-summary-btn').onclick = () => {
-    const item = {
-        id: modal.querySelector('#modal-product-id').value,
-        nama: modal.querySelector('#modal-product-name').value,
-        stok_lama: parseInt(modal.querySelector('#modal-current-stock').value),
-        jumlah_beli: parseInt(modal.querySelector('#modal-purchase-qty').value),
-        harga_beli: parseInt(modal.querySelector('#modal-product-price').value),
-    };
-
-    if (!item.harga_beli || item.harga_beli <= 0) {
-        alert('Harga beli tidak valid');
+        $('#btnCheckout').prop('disabled', true);
+        updateSummary();
         return;
     }
 
-    const idx = purchaseCart.findIndex(p => p.id === item.id);
-    if (idx !== -1) {
-        purchaseCart[idx].jumlah_beli += item.jumlah_beli;
-    } else {
-        purchaseCart.push(item);
-    }
+    purchaseCart.forEach((item, idx) => {
+        const total = item.jumlah_beli * item.harga;
+        totalBiaya += total;
 
-    saveCart();
+        summaryBody.innerHTML += `
+        <tr>
+            <td data-label="ID">
+                <span class="id-badge">${item.id}</span>
+            </td>
+            <td data-label="Nama">
+                <span class="product-name">${item.nama}</span>
+            </td>
+            <td data-label="Stok Lama">${item.stok_lama}</td>
+            <td data-label="Jumlah Beli">
+                <div class="quantity-control">
+                    <button type="button" class="btn-qty" onclick="decreasePurchaseQty(${idx})">
+                        <i class="bi bi-dash"></i>
+                    </button>
+                    <input type="number" 
+                           class="qty-input" 
+                           value="${item.jumlah_beli}" 
+                           min="1"
+                           onchange="updatePurchaseQty(${idx}, this.value)">
+                    <button type="button" class="btn-qty" onclick="increasePurchaseQty(${idx})">
+                        <i class="bi bi-plus"></i>
+                    </button>
+                </div>
+            </td>
+            <td data-label="Stok Baru">
+                <strong>${item.stok_lama + item.jumlah_beli}</strong>
+            </td>
+            <td data-label="Harga">Rp ${item.harga.toLocaleString('id-ID')}</td>
+            <td data-label="Total">
+                <strong>Rp ${total.toLocaleString('id-ID')}</strong>
+            </td>
+            <td data-label="Aksi">
+                <button type="button" class="btn-delete" onclick="removeFromPurchaseCart(${idx})" title="Hapus">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </td>
+        </tr>`;
+    });
+
     updateSummary();
-    modal.style.display = 'none';
-};
+    $('#btnCheckout').prop('disabled', false);
+}
 
-/* ================== REMOVE ITEM ================== */
-document.getElementById('summary-body').onclick = e => {
-    if (e.target.classList.contains('remove-item')) {
-        purchaseCart = purchaseCart.filter(i => i.id !== e.target.dataset.id);
-        saveCart();
-        updateSummary();
+// ================= UPDATE SUMMARY ================= 
+function updateSummary() {
+    totalBiayaEl.innerText = 'Rp ' + totalBiaya.toLocaleString('id-ID');
+}
+
+// ================= QUANTITY CONTROLS ================= 
+function increasePurchaseQty(index) {
+    purchaseCart[index].jumlah_beli++;
+    renderPurchaseCart();
+}
+
+function decreasePurchaseQty(index) {
+    if (purchaseCart[index].jumlah_beli > 1) {
+        purchaseCart[index].jumlah_beli--;
+        renderPurchaseCart();
+    } else {
+        removeFromPurchaseCart(index);
     }
-};
-document.getElementById('purchase-form').onsubmit = e => {
+}
+
+function updatePurchaseQty(index, value) {
+    const qty = parseInt(value);
+    
+    if (qty < 1) {
+        removeFromPurchaseCart(index);
+        return;
+    }
+    
+    purchaseCart[index].jumlah_beli = qty;
+    renderPurchaseCart();
+}
+
+// ================= REMOVE FROM CART ================= 
+function removeFromPurchaseCart(index) {
+    Swal.fire({
+        title: 'Hapus Item?',
+        text: 'Apakah Anda yakin ingin menghapus item ini dari keranjang?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '<i class="fas fa-trash"></i> Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            purchaseCart.splice(index, 1);
+            renderPurchaseCart();
+            Swal.fire({
+                icon: 'success',
+                title: 'Dihapus',
+                text: 'Item berhasil dihapus dari keranjang',
+                timer: 1000,
+                showConfirmButton: false
+            });
+        }
+    });
+}
+
+// ================= CLEAR CART ================= 
+function clearPurchaseCart() {
+    if (purchaseCart.length === 0) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Keranjang Kosong',
+            text: 'Tidak ada item di keranjang',
+            timer: 2000,
+            showConfirmButton: false
+        });
+        return;
+    }
+
+    Swal.fire({
+        title: 'Kosongkan Keranjang?',
+        text: 'Semua item akan dihapus dari keranjang!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '<i class="bi bi-trash"></i> Ya, Kosongkan!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            purchaseCart = [];
+            renderPurchaseCart();
+            Swal.fire({
+                icon: 'success',
+                title: 'Dikosongkan',
+                text: 'Keranjang berhasil dikosongkan',
+                timer: 1000,
+                showConfirmButton: false
+            });
+        }
+    });
+}
+
+// ================= SUBMIT FORM ================= 
+document.getElementById('purchase-form').addEventListener('submit', function (e) {
     e.preventDefault();
 
-    fetch("{{ route('purchase.store') }}", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-TOKEN": document.querySelector('meta[name=csrf-token]').content
-        },
-        body: JSON.stringify({
-            tanggal_pembelian: document.getElementById('tanggal_pembelian').value,
-            supplier: document.getElementById('supplier').value,
-            keterangan: document.getElementById('keterangan').value,
-            total_biaya: totalBiaya,
-            items: purchaseCart
-        })
-    })
-    .then(res => {
-        if (!res.ok) throw new Error('Gagal menyimpan');
-        return res.json();
-    })
-    .then(res => {
-        alert(res.message);
+    // Validasi cart tidak kosong
+    if (purchaseCart.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Keranjang Kosong',
+            text: 'Silakan tambahkan produk terlebih dahulu!',
+            timer: 2000,
+            showConfirmButton: false
+        });
+        return;
+    }
 
-        if (res.success) {
-            localStorage.removeItem('purchaseCart');
-            location.reload();
-        }
-    })
-    .catch(err => {
-        alert('ERROR: ' + err.message);
-        console.error(err);
+    // PERUBAHAN: Tidak perlu validasi tanggal karena menggunakan waktu otomatis
+    // Waktu akan di-set di backend menggunakan Carbon::now('Asia/Jakarta')
+
+    // Konfirmasi sebelum submit
+    const currentTime = new Date().toLocaleString('id-ID', { 
+        timeZone: 'Asia/Jakarta',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
     });
-};
 
+    Swal.fire({
+        title: 'Konfirmasi Pembelian',
+        html: `
+            <div style="text-align: left; padding: 10px;">
+                <p><strong>Waktu Transaksi:</strong> ${currentTime} WIB</p>
+                <p><strong>Total Pembelian:</strong> Rp ${totalBiaya.toLocaleString('id-ID')}</p>
+                <p><strong>Jumlah Item:</strong> ${purchaseCart.length} produk</p>
+            </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '<i class="bi bi-check-circle"></i> Ya, Proses!',
+        cancelButtonText: 'Batal',
+        showLoaderOnConfirm: true,
+        preConfirm: () => {
+            const submitBtn = document.querySelector('#btnCheckout');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Menyimpan...';
+
+            // PERUBAHAN: Tidak kirim tanggal_pembelian, akan di-set otomatis di backend
+            return fetch("{{ route('purchase.store') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    total_pembelian: totalBiaya,
+                    items: purchaseCart
+                    // tanggal_pembelian TIDAK dikirim, akan otomatis di backend
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.message || 'Terjadi kesalahan pada server');
+                    });
+                }
+                return response.json();
+            })
+            .catch(error => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Selesaikan Pembelian';
+                Swal.showValidationMessage(`Request failed: ${error.message}`);
+            });
+        },
+        allowOutsideClick: () => !Swal.isLoading()
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const response = result.value;
+            
+            if (response.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Pembelian Berhasil!',
+                    html: `
+                        <div style="text-align: left; padding: 10px;">
+                            <p><strong>Total Pembelian:</strong> Rp ${totalBiaya.toLocaleString('id-ID')}</p>
+                            <p>Data pembelian berhasil disimpan</p>
+                        </div>
+                    `,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#10b981'
+                }).then(() => {
+                    // Reset form dan cart
+                    purchaseCart = [];
+                    renderPurchaseCart();
+                    
+                    // Redirect atau reload halaman
+                    if (response.redirect) {
+                        window.location.href = response.redirect;
+                    } else {
+                        window.location.reload();
+                    }
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: response.message || 'Gagal menyimpan pembelian',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+        }
+    });
+});
 </script>
+
+<style>
+/* Style untuk display waktu transaksi */
+.transaction-time-display {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-left: 4px solid #3b82f6;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #1e40af;
+    margin-top: 8px;
+}
+
+.transaction-time-display i {
+    font-size: 20px;
+    color: #3b82f6;
+}
+
+.text-muted {
+    color: #6b7280;
+    font-size: 12px;
+    display: block;
+    margin-top: 8px;
+}
+</style>
 
 </body>
 </html>

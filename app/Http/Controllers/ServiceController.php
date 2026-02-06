@@ -8,136 +8,106 @@ use Illuminate\Http\Request;
 class ServiceController extends Controller
 {
     /**
-     * Menampilkan daftar service.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\View\View
+     * Menampilkan daftar service dengan fitur pencarian.
      */
     public function index(Request $request)
     {
-        // Ambil nilai pencarian dari query string
+        // Ambil query pencarian
         $q = $request->query('q');
-        
-        // Query untuk mencari service berdasarkan pencarian
+
+        // Query service dengan kondisi pencarian
         $services = Service::when($q, function ($query) use ($q) {
-            return $query->where('service', 'like', "%{$q}%"); // Pencarian berdasarkan nama service
-        })
-        ->orderBy('id_service', 'asc')  // Urutkan berdasarkan id_service
-        ->get();
+                return $query->where('service', 'like', "%{$q}%")
+                             ->orWhere('id_service', 'like', "%{$q}%")
+                             ->orWhere('harga_jual', 'like', "%{$q}%");
+            })
+            ->orderBy('service', 'asc')
+            ->get();
+
+        // ✅ PASTIKAN tidak ada query lain yang meng-overwrite $services
+        // Jangan tambahkan: $services = Service::orderBy('service')->get();
 
         return view('service', compact('services', 'q'));
     }
 
     /**
-     * Menampilkan form untuk menambah service.
-     *
-     * @return \Illuminate\View\View
-     */
-    public function create()
-    {
-        return view('services.create'); // Pastikan view 'services.create' ada
-    }
-
-    /**
-     * Menyimpan service baru.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\RedirectResponse
+     * Menyimpan service baru dengan AUTO INCREMENT ID (SV001, SV002, dst).
      */
     public function store(Request $request)
     {
-        // Validasi data service
-        $request->validate([
-            'service' => 'required|string|max:50', // Validasi nama service
-            'harga_jual' => 'required|numeric',   // Validasi harga service
-            'diskon' => 'required|numeric|min:0|max:100', // Validasi diskon
+        // Validasi input
+        $validated = $request->validate([
+            'service'    => 'required|string|max:100',
+            'harga_jual' => 'required|numeric|min:0',
+            'diskon'     => 'nullable|numeric|min:0|max:100', // ✅ Ubah ke nullable
         ]);
 
-        // Hitung harga setelah diskon
-        $harga_setelah_diskon = $request->harga_jual - ($request->harga_jual * $request->diskon / 100);
-
-        // Mendapatkan ID terakhir dan membuat ID service baru dengan format SVxxx
+        // Generate ID SERVICE otomatis (SV001, SV002, dst)
         $last = Service::orderBy('id_service', 'desc')->first();
         $number = $last ? (int) substr($last->id_service, 2) + 1 : 1;
         $id_service = 'SV' . str_pad($number, 3, '0', STR_PAD_LEFT);
 
-        // Menyimpan service baru ke database
+        // Hitung harga setelah diskon
+        $harga_jual = $validated['harga_jual'];
+        $diskon = $validated['diskon'] ?? 0; // ✅ Default 0 jika tidak diisi
+        $harga_setelah_diskon = $harga_jual - ($harga_jual * $diskon / 100);
+
+        // Simpan ke database
         Service::create([
-            'id_service' => $id_service,
-            'service' => $request->service,
-            'harga_jual' => $request->harga_jual,
-            'diskon' => $request->diskon,
-            'harga_setelah_diskon' => $harga_setelah_diskon, // Simpan harga setelah diskon
+            'id_service'           => $id_service,
+            'service'              => $validated['service'],
+            'harga_jual'           => $harga_jual,
+            'diskon'               => $diskon,
+            'harga_setelah_diskon' => $harga_setelah_diskon,
         ]);
 
-        // Redirect ke halaman services dengan pesan sukses
-        return redirect()->route('services.index')->with('success', 'Service berhasil ditambahkan.');
+        return redirect()
+            ->route('services.index')
+            ->with('success', 'Service berhasil ditambahkan');
     }
 
     /**
-     * Menampilkan form untuk mengedit service.
-     *
-     * @param string $id
-     * @return \Illuminate\View\View
+     * Update data service.
      */
-    public function edit($id)
+    public function update(Request $request, $id_service)
     {
-        // Mencari service berdasarkan id_service
-        $service = Service::findOrFail($id);
-
-        // Menampilkan form edit service dengan data service yang sudah ada
-        return view('services.edit', compact('service')); // Pastikan view 'services.edit' ada
-    }
-
-    /**
-     * Menyimpan perubahan service.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @param string $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function update(Request $request, $id)
-    {
-        // Validasi data service
-        $request->validate([
-            'service' => 'required|string|max:50', // Validasi nama service
-            'harga_jual' => 'required|numeric',   // Validasi harga service
-            'diskon' => 'required|numeric|min:0|max:100', // Validasi diskon
+        // Validasi input
+        $validated = $request->validate([
+            'service'    => 'required|string|max:100',
+            'harga_jual' => 'required|numeric|min:0',
+            'diskon'     => 'nullable|numeric|min:0|max:100', // ✅ Ubah ke nullable
         ]);
 
         // Hitung harga setelah diskon
-        $harga_setelah_diskon = $request->harga_jual - ($request->harga_jual * $request->diskon / 100);
+        $harga_jual = $validated['harga_jual'];
+        $diskon = $validated['diskon'] ?? 0; // ✅ Default 0 jika tidak diisi
+        $harga_setelah_diskon = $harga_jual - ($harga_jual * $diskon / 100);
 
-        // Mencari service berdasarkan id_service
-        $service = Service::findOrFail($id);
-
-        // Update data service
+        // Cari service dan update
+        $service = Service::findOrFail($id_service);
         $service->update([
-            'service' => $request->service,
-            'harga_jual' => $request->harga_jual,
-            'diskon' => $request->diskon,
-            'harga_setelah_diskon' => $harga_setelah_diskon, // Perbarui harga setelah diskon
+            'service'              => $validated['service'],
+            'harga_jual'           => $harga_jual,
+            'diskon'               => $diskon,
+            'harga_setelah_diskon' => $harga_setelah_diskon,
         ]);
 
-        // Redirect ke halaman services dengan pesan sukses
-        return redirect()->route('services.index')->with('success', 'Service berhasil diperbarui.');
+        return redirect()
+            ->route('services.index')
+            ->with('success', 'Service berhasil diperbarui');
     }
 
     /**
-     * Menghapus service.
-     *
-     * @param string $id
-     * @return \Illuminate\Http\RedirectResponse
+     * Hapus service dari database.
      */
-    public function destroy($id)
+    public function destroy($id_service)
     {
-        // Mencari service berdasarkan id_service
-        $service = Service::findOrFail($id);
-
-        // Menghapus service
+        // Cari service dan hapus
+        $service = Service::findOrFail($id_service);
         $service->delete();
 
-        // Redirect ke halaman services dengan pesan sukses
-        return redirect()->route('services.index')->with('success', 'Service berhasil dihapus.');
+        return redirect()
+            ->route('services.index')
+            ->with('success', 'Service berhasil dihapus');
     }
 }

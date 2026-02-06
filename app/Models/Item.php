@@ -9,51 +9,73 @@ class Item extends Model
 {
     use HasFactory;
 
-    // Tentukan primary key jika berbeda dengan default (id)
+    protected $table = 'items';
     protected $primaryKey = 'id_produk';
-    public $incrementing = false;  // Menyatakan bahwa id_produk bukan auto increment
-    protected $keyType = 'string'; // Karena id_produk bertipe string (misalnya 'BR001')
+    public $incrementing = false;
+    protected $keyType = 'string';
 
-    // Daftar kolom yang boleh diisi mass-assignable
     protected $fillable = [
         'id_produk',
+        'tanggal_masuk',
         'nama_produk',
         'id_kategori',
         'id_brand',
-        'satuan',
-        'modal',
+        'id_supplier',
         'harga_jual',
         'stok',
+        'stok_awal',
+        'satuan',
+        'modal',
         'FSN',
+        'tor_value',
+        'last_fsn_calculation',
+        'days_as_n',
+        'n_status_started_at',
         'diskon',
-        'harga_setelah_diskon',  // Menambahkan kolom harga_setelah_diskon ke dalam fillable
+        'auto_discount',
+        'is_auto_discount_active',
+        'harga_setelah_diskon',
     ];
 
-    // Relasi dengan kategori
+    protected $casts = [
+        'tanggal_masuk' => 'datetime',
+        'last_fsn_calculation' => 'datetime',
+        'n_status_started_at' => 'datetime',
+        'is_auto_discount_active' => 'boolean',
+        'auto_discount' => 'decimal:2',
+        'diskon' => 'decimal:2',
+    ];
+
+    /**
+     * Get total discount (manual + auto)
+     */
+    public function getTotalDiscountAttribute()
+    {
+        return $this->diskon + $this->auto_discount;
+    }
+
+    /**
+     * Calculate final price after all discounts
+     */
+    public function getFinalPriceAttribute()
+    {
+        $totalDiscount = $this->total_discount;
+        $discountAmount = $this->harga_jual * ($totalDiscount / 100);
+        return $this->harga_jual - $discountAmount;
+    }
+
     public function kategori()
     {
-        // 'id_kategori' di tabel 'items' merujuk ke 'id_kategori' di tabel 'categories'
         return $this->belongsTo(Category::class, 'id_kategori', 'id_kategori');
     }
 
-    // Relasi dengan brand
     public function brand()
     {
-        // 'id_brand' di tabel 'items' merujuk ke 'id_brand' di tabel 'brands'
         return $this->belongsTo(Brand::class, 'id_brand', 'id_brand');
     }
 
-    // Aksesori untuk menghitung harga setelah diskon
-    public function getHargaSetelahDiskonAttribute()
+    public function supplier()
     {
-        // Menghitung harga setelah diskon jika diskon tersedia
-        return $this->harga_jual - ($this->harga_jual * ($this->diskon / 100));
-    }
-
-    // Opsional: Menggunakan mutator untuk menyimpan harga setelah diskon saat menyimpan data
-    public function setHargaSetelahDiskonAttribute($value)
-    {
-        // Ini akan otomatis menghitung harga_setelah_diskon berdasarkan harga_jual dan diskon yang diterapkan
-        $this->attributes['harga_setelah_diskon'] = $this->harga_jual - ($this->harga_jual * ($this->diskon / 100));
+        return $this->belongsTo(Supplier::class, 'id_supplier', 'id_supplier');
     }
 }

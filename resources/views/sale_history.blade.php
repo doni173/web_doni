@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>History Pembelian | Sistem Inventory</title>
+    <title>History Penjualan | Sistem Inventory dan Kasir</title>
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -17,15 +17,15 @@
 
     <div class="main-container">
         <div class="main-content">
-            <h2>History Pembelian</h2>
+            <h2>History Penjualan</h2>
             
             <div class="buttons">
-                <form action="{{ route('purchase.history') }}" method="GET" class="search-form" id="searchForm">
+                <form action="{{ route('sale.history') }}" method="GET" class="search-form" id="searchForm">
                     <div class="search-input-wrapper">
                         <input 
                             type="text" 
                             class="form-control" 
-                            placeholder="Cari ID pembelian atau supplier..." 
+                            placeholder="Cari ID transaksi, kasir, atau customer..." 
                             name="q" 
                             value="{{ request('q') }}" 
                             id="searchInput" 
@@ -67,29 +67,37 @@
                 <table class="table-main">
                     <thead>
                         <tr>
-                            <th>ID Pembelian</th>
+                            <th>ID Penjualan</th>
                             <th>Tanggal</th>
-                            <th>Supplier</th>
-                            <th>Total Pembelian</th>
+                            <th>Kasir</th>
+                            <th>Customer</th>
+                            <th>Total Belanja</th>
+                            <th>Jumlah Bayar</th>
+                            <th>Kembalian</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
-                    <tbody id="purchaseTableBody">
-                        @forelse($purchases as $purchase)
+                    <tbody id="saleTableBody">
+                        @forelse($sales as $sale)
                         <tr>
-                            <td data-label="ID Pembelian">
-                                <span class="id-badge">{{ $purchase->id_pembelian }}</span>
+                            <td data-label="ID Penjualan">
+                                <span class="id-badge">{{ $sale->id_penjualan }}</span>
                             </td>
-                            <td data-label="Tanggal">{{ \Carbon\Carbon::parse($purchase->tgl_pembelian)->format('d/m/Y H:i') }}</td>
-                            <td data-label="Supplier">
-                                <span class="product-name">{{ $purchase->supplier->nama_supplier ?? '-' }}</span>
+                            <td data-label="Tanggal">{{ \Carbon\Carbon::parse($sale->tanggal_transaksi)->format('d/m/Y H:i') }}</td>
+                            <td data-label="Kasir">{{ $sale->id_user }}</td>
+                            <td data-label="Customer">
+                                <span class="product-name">{{ $sale->customer->nama_pelanggan ?? '-' }}</span>
                             </td>
-                            <td data-label="Total Pembelian">
-                                <span class="stock-number">Rp {{ number_format($purchase->total_pembelian, 0, ',', '.') }}</span>
+                            <td data-label="Total Belanja">
+                                <span class="stock-number">Rp {{ number_format($sale->total_belanja, 0, ',', '.') }}</span>
+                            </td>
+                            <td data-label="Jumlah Bayar">Rp {{ number_format($sale->jumlah_bayar, 0, ',', '.') }}</td>
+                            <td data-label="Kembalian">
+                                <span class="text-success" style="font-weight: 600;">Rp {{ number_format($sale->kembalian, 0, ',', '.') }}</span>
                             </td>
                             <td data-label="Aksi">
                                 <div class="action-buttons">
-                                    <a href="{{ route('purchase.show', $purchase->id_pembelian) }}" class="btn-info" title="Lihat Detail">
+                                    <a href="{{ route('sale.show', $sale->id_penjualan) }}" class="btn-info" title="Lihat Detail">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                 </div>
@@ -97,10 +105,10 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="5" class="text-center">
+                            <td colspan="8" class="text-center">
                                 <div class="empty-state">
                                     <i class="bi bi-inbox"></i>
-                                    <p>Tidak ada transaksi pembelian</p>
+                                    <p>Tidak ada transaksi penjualan</p>
                                 </div>
                             </td>
                         </tr>
@@ -110,9 +118,9 @@
             </div>
 
             <!-- Pagination -->
-            @if(isset($purchases) && $purchases instanceof \Illuminate\Pagination\LengthAwarePaginator)
+            @if(isset($sales) && $sales instanceof \Illuminate\Pagination\LengthAwarePaginator)
             <div class="pagination-wrapper">
-                {{ $purchases->links() }}
+                {{ $sales->links() }}
             </div>
             @endif
         </div>
@@ -147,7 +155,7 @@
             const searchIcon = $('#searchIcon');
             const clearButton = $('#clearSearch');
             const searchInfo = $('#searchInfo');
-            const tableBody = $('#purchaseTableBody');
+            const tableBody = $('#saleTableBody');
             const filterButton = $('#filterButton');
 
             // Live Search
@@ -195,7 +203,7 @@
                 tableBody.addClass('table-loading');
 
                 $.ajax({
-                    url: '{{ route("purchase.history") }}',
+                    url: '{{ route("sale.history") }}',
                     type: 'GET',
                     data: { 
                         q: query,
@@ -204,7 +212,7 @@
                     success: function(response) {
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(response, 'text/html');
-                        const newTableBody = doc.querySelector('#purchaseTableBody');
+                        const newTableBody = doc.querySelector('#saleTableBody');
                         
                         if (newTableBody) {
                             tableBody.html(newTableBody.innerHTML);

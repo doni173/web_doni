@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service | Sistem Inventory dan Kasir</title>
+    <title>Supplier | Sistem Inventory dan Kasir</title>
 
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -20,15 +20,15 @@
 <div class="main-container">
 <div class="main-content">
 
-<h2>Data Service</h2>
+<h2>Data Supplier</h2>
 
 <!-- ================= SEARCH & ACTION ================= -->
 <div class="buttons">
-    <form action="{{ route('services.index') }}" method="GET" class="search-form" id="searchForm">
+    <form action="{{ route('suppliers.index') }}" method="GET" class="search-form" id="searchForm">
         <div class="search-input-wrapper">
             <input type="text"
                    class="form-control"
-                   placeholder="Cari service..."
+                   placeholder="Cari supplier..."
                    name="q"
                    value="{{ request('q') }}"
                    id="searchInput"
@@ -43,7 +43,7 @@
             <span>Clear</span>
         </button>
 
-        <button type="button" class="btn-add" data-toggle="modal" data-target="#addServiceModal">
+        <button type="button" class="btn-add" data-toggle="modal" data-target="#addSupplierModal">
             <i class="bi bi-plus-circle"></i>
             <span>Tambah Data</span>
         </button>
@@ -59,44 +59,40 @@
 <table class="table-main">
 <thead>
 <tr>
-    <th>ID Service</th>
-    <th>Nama Service</th>
-    <th>Harga Jual</th>
-    <th>Diskon</th>
-    <th>Harga Setelah Diskon</th>
+    <th>ID Supplier</th>
+    <th>Nama Supplier</th>
+    <th>No HP</th>
     <th>Aksi</th>
 </tr>
 </thead>
-<tbody id="serviceTableBody">
+<tbody id="supplierTableBody">
 
-@forelse($services as $service)
+@forelse($suppliers as $supplier)
 <tr>
-    <td data-label="ID Service">
-        <span class="id-badge">{{ $service->id_service }}</span>
+    <td data-label="ID Supplier">
+        <span class="id-badge">{{ $supplier->id_supplier }}</span>
     </td>
-    <td data-label="Nama Service">
-        <span class="product-name">{{ $service->service }}</span>
+    <td data-label="Nama Supplier">
+        <span class="product-name">{{ $supplier->nama_supplier }}</span>
     </td>
-    <td data-label="Harga Jual">Rp {{ number_format($service->harga_jual,0,',','.') }}</td>
-    <td data-label="Diskon">{{ $service->diskon }}%</td>
-    <td data-label="Harga Setelah Diskon">Rp {{ number_format($service->harga_setelah_diskon,0,',','.') }}</td>
+    <td data-label="No HP">{{ $supplier->no_hp }}</td>
     <td data-label="Aksi">
         <div class="action-buttons">
             <button class="btn-edit"
                     data-toggle="modal"
-                    data-target="#editServiceModal{{ $service->id_service }}"
+                    data-target="#editSupplierModal{{ $supplier->id_supplier }}"
                     title="Edit">
                 <i class="fas fa-edit"></i>
             </button>
 
             <button class="btn-delete"
-                    onclick="confirmDelete('{{ $service->id_service }}')"
+                    onclick="confirmDelete('{{ $supplier->id_supplier }}')"
                     title="Hapus">
                 <i class="fas fa-trash-alt"></i>
             </button>
 
-            <form id="delete-form-{{ $service->id_service }}"
-                  action="{{ route('services.destroy', $service->id_service) }}"
+            <form id="delete-form-{{ $supplier->id_supplier }}"
+                  action="{{ route('suppliers.destroy', $supplier->id_supplier) }}"
                   method="POST"
                   style="display:none;">
                 @csrf
@@ -107,10 +103,10 @@
 </tr>
 @empty
 <tr>
-    <td colspan="6" class="text-center">
+    <td colspan="4" class="text-center">
         <div class="empty-state">
             <i class="bi bi-inbox"></i>
-            <p>Tidak ada data service</p>
+            <p>Tidak ada data supplier</p>
         </div>
     </td>
 </tr>
@@ -124,14 +120,14 @@
 </div>
 
 <!-- ================= MODAL TAMBAH ================= -->
-<div class="modal fade" id="addServiceModal" tabindex="-1" role="dialog" aria-labelledby="addServiceModalLabel" aria-hidden="true">
+<div class="modal fade" id="addSupplierModal" tabindex="-1" role="dialog" aria-labelledby="addSupplierModalLabel" aria-hidden="true">
 <div class="modal-dialog" role="document">
 <div class="modal-content">
 
 <div class="modal-header">
-    <h5 class="modal-title" id="addServiceModalLabel">
+    <h5 class="modal-title" id="addSupplierModalLabel">
         <i class="bi bi-plus-circle"></i>
-        Tambah Service
+        Tambah Supplier
     </h5>
     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
         <span aria-hidden="true">&times;</span>
@@ -139,22 +135,17 @@
 </div>
 
 <div class="modal-body">
-<form action="{{ route('services.store') }}" method="POST">
+<form action="{{ route('suppliers.store') }}" method="POST">
 @csrf
 
 <div class="form-group">
-    <label for="service">Nama Service</label>
-    <input type="text" class="form-control" id="service" name="service" placeholder="Masukkan nama service" required>
+    <label for="nama_supplier">Nama Supplier</label>
+    <input type="text" class="form-control" id="nama_supplier" name="nama_supplier" placeholder="Masukkan nama supplier" required>
 </div>
 
 <div class="form-group">
-    <label for="harga_jual">Harga Jual (Rp)</label>
-    <input type="text" class="form-control rupiah" id="harga_jual" name="harga_jual" placeholder="Masukkan harga jual" autocomplete="off" required>
-</div>
-
-<div class="form-group">
-    <label for="diskon">Diskon (%)</label>
-    <input type="number" class="form-control diskon" id="diskon" name="diskon" min="0" max="100" step="1" value="0" placeholder="Masukkan diskon" required>
+    <label for="no_hp">No HP</label>
+    <input type="text" class="form-control" id="no_hp" name="no_hp" placeholder="Masukkan no HP" required>
 </div>
 
 <div class="modal-footer-custom">
@@ -171,15 +162,15 @@
 </div>
 
 <!-- ================= MODAL EDIT ================= -->
-@foreach($services as $service)
-<div class="modal fade" id="editServiceModal{{ $service->id_service }}" tabindex="-1" role="dialog" aria-labelledby="editServiceModalLabel{{ $service->id_service }}" aria-hidden="true">
+@foreach($suppliers as $supplier)
+<div class="modal fade" id="editSupplierModal{{ $supplier->id_supplier }}" tabindex="-1" role="dialog" aria-labelledby="editSupplierModalLabel{{ $supplier->id_supplier }}" aria-hidden="true">
 <div class="modal-dialog" role="document">
 <div class="modal-content">
 
 <div class="modal-header">
-    <h5 class="modal-title" id="editServiceModalLabel{{ $service->id_service }}">
+    <h5 class="modal-title" id="editSupplierModalLabel{{ $supplier->id_supplier }}">
         <i class="bi bi-pencil-square"></i>
-        Edit Service
+        Edit Supplier
     </h5>
     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
         <span aria-hidden="true">&times;</span>
@@ -187,41 +178,27 @@
 </div>
 
 <div class="modal-body">
-<form action="{{ route('services.update', $service->id_service) }}" method="POST">
+<form action="{{ route('suppliers.update', $supplier->id_supplier) }}" method="POST">
 @csrf
 @method('PUT')
 
 <div class="form-group">
-    <label for="service{{ $service->id_service }}">Nama Service</label>
+    <label for="nama_supplier{{ $supplier->id_supplier }}">Nama Supplier</label>
     <input type="text"
            class="form-control"
-           id="service{{ $service->id_service }}"
-           name="service"
-           value="{{ $service->service }}"
+           id="nama_supplier{{ $supplier->id_supplier }}"
+           name="nama_supplier"
+           value="{{ $supplier->nama_supplier }}"
            required>
 </div>
 
 <div class="form-group">
-    <label for="harga_jual{{ $service->id_service }}">Harga Jual (Rp)</label>
+    <label for="no_hp{{ $supplier->id_supplier }}">No HP</label>
     <input type="text"
-           class="form-control rupiah"
-           id="harga_jual{{ $service->id_service }}"
-           name="harga_jual"
-           value="{{ number_format($service->harga_jual,0,',','.') }}"
-           autocomplete="off"
-           required>
-</div>
-
-<div class="form-group">
-    <label for="diskon{{ $service->id_service }}">Diskon (%)</label>
-    <input type="number"
-           class="form-control diskon"
-           id="diskon{{ $service->id_service }}"
-           name="diskon"
-           value="{{ $service->diskon }}"
-           min="0"
-           max="100"
-           step="1"
+           class="form-control"
+           id="no_hp{{ $supplier->id_supplier }}"
+           name="no_hp"
+           value="{{ $supplier->no_hp }}"
            required>
 </div>
 
@@ -264,7 +241,7 @@ function toggleSidebar() {
 function confirmDelete(id) {
     Swal.fire({
         title: 'Apakah Anda yakin?',
-        text: 'Data service ini akan dihapus permanen!',
+        text: 'Data supplier ini akan dihapus permanen!',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
@@ -287,7 +264,7 @@ $(document).ready(function() {
     const clearButton = $('#clearSearch');
     const searchInfo = $('#searchInfo');
     const searchTerm = $('#searchTerm');
-    const tableBody = $('#serviceTableBody');
+    const tableBody = $('#supplierTableBody');
 
     // Live search saat user mengetik
     searchInput.on('input', function() {
@@ -321,14 +298,14 @@ $(document).ready(function() {
         searchLoading.show();
 
         $.ajax({
-            url: '{{ route("services.index") }}',
+            url: '{{ route("suppliers.index") }}',
             type: 'GET',
             data: { q: query },
             success: function(response) {
                 // Parse HTML response
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(response, 'text/html');
-                const newTableBody = doc.querySelector('#serviceTableBody');
+                const newTableBody = doc.querySelector('#supplierTableBody');
                 
                 if (newTableBody) {
                     tableBody.html(newTableBody.innerHTML);
@@ -364,26 +341,6 @@ $(document).ready(function() {
     $('#searchForm').on('submit', function(e) {
         e.preventDefault();
         return false;
-    });
-
-    // ================= FORMAT RUPIAH ================= 
-    $(document).on('input', '.rupiah', function() {
-        let val = $(this).val().replace(/[^0-9]/g, '');
-        $(this).val(val.replace(/\B(?=(\d{3})+(?!\d))/g, '.'));
-    });
-
-    // Remove formatting sebelum submit
-    $('form').on('submit', function() {
-        $(this).find('.rupiah').each(function() {
-            $(this).val($(this).val().replace(/\./g, ''));
-        });
-    });
-
-    // ================= DISKON INTEGER ================= 
-    $(document).on('input', '.diskon', function() {
-        let val = $(this).val().replace(/[^0-9]/g, '');
-        if (parseInt(val) > 100) val = 100;
-        $(this).val(val);
     });
 });
 </script>

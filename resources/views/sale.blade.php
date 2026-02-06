@@ -3,579 +3,741 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Penjualan | Sistem Inventory dan Kasir</title>
-    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
-</head>
+    <title>Transaksi Penjualan | Sistem Inventory dan Kasir</title>
 
+    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
 <body>
-@include('layouts.sidebar')
+
 @include('layouts.navbar')
-<div class="container">
-    <div class="container-daftar">
-        <div class="">
-            <div class="padding">
-            <h2>Transaksi Penjualan</h2>
+@include('layouts.sidebar')
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<div class="main-container">
+    <div class="main-content">
+
+        <h2>Transaksi Penjualan</h2>
+
+        <!-- ================= PRODUCTS & SERVICES GRID ================= -->
+        <div class="products-services-grid">
+            
+            <!-- ================= PRODUCT SECTION ================= -->
+            <div class="section-wrapper">
+                <h3 class="section-title">
+                    <i class="bi bi-box-seam"></i> Daftar Produk
+                </h3>
+                
+                <div class="search-wrapper">
+                    <div class="search-input-wrapper">
+                        <input type="text" 
+                               class="form-control" 
+                               placeholder="Cari produk..." 
+                               id="searchProduct"
+                               autocomplete="off">
+                        <span class="search-icon">
+                            <i class="bi bi-search"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table-main">
+                        <thead>
+                            <tr>
+                                <th>Produk</th>
+                                <th>Harga</th>
+                                <th>Stok</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productTableBody">
+                            @forelse($items as $item)
+                            <tr data-product-search="{{ strtolower($item->nama_produk) }}">
+                                <td data-label="Produk">
+                                    <span class="product-name">{{ $item->nama_produk }}</span>
+                                </td>
+                                <td data-label="Harga">
+                                    Rp {{ number_format($item->harga_setelah_diskon, 0, ',', '.') }}
+                                </td>
+                                <td data-label="Stok">
+                                    <span class="badge {{ $item->stok == 0 ? 'badge-danger' : ($item->stok < 10 ? 'badge-warning' : 'badge-success') }}">
+                                        {{ $item->stok }} unit
+                                    </span>
+                                </td>
+                                <td data-label="Aksi">
+                                    <button class="btn-add-cart {{ $item->stok == 0 ? 'disabled' : '' }}" 
+                                            data-id="{{ $item->id_produk }}"
+                                            data-nama="{{ $item->nama_produk }}"
+                                            data-harga="{{ $item->harga_setelah_diskon }}"
+                                            data-diskon="{{ $item->diskon }}"
+                                            data-stok="{{ $item->stok }}"
+                                            data-type="produk"
+                                            {{ $item->stok == 0 ? 'disabled' : '' }}>
+                                        <i class="bi bi-{{ $item->stok == 0 ? 'x-circle' : 'plus-circle' }}"></i>
+                                        {{ $item->stok == 0 ? 'Stok Habis' : 'Tambah' }}
+                                    </button>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="4" class="text-center">
+                                    <div class="empty-state">
+                                        <i class="bi bi-inbox"></i>
+                                        <p>Tidak ada data produk</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>  
-        <!-- Wrapper untuk tabel Daftar Barang dan Daftar Service -->
-        <div class="table-wrapper">
-            <!-- Daftar Barang -->
-            <div class="table-container">
-                <form action="{{ route('sale.index') }}" method="GET" class="search-form">
-                    <input type="text" class="form-control" placeholder="Cari barang..." name="q_barang" value="{{ request('q_barang') }}" style="width: 300px;">
-                    <button type="submit" class="btn-src1">Search</button>
-                </form>
+
+            <!-- ================= SERVICE SECTION ================= -->
+            <div class="section-wrapper">
+                <h3 class="section-title">
+                    <i class="bi bi-gear"></i> Daftar Service
+                </h3>
+                
+                <div class="search-wrapper">
+                    <div class="search-input-wrapper">
+                        <input type="text" 
+                               class="form-control" 
+                               placeholder="Cari service..." 
+                               id="searchService"
+                               autocomplete="off">
+                        <span class="search-icon">
+                            <i class="bi bi-search"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table-main">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Harga</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="serviceTableBody">
+                            @forelse($services as $service)
+                            <tr data-service-search="{{ strtolower($service->service) }}">
+                                <td data-label="Service">
+                                    <span class="product-name">{{ $service->service }}</span>
+                                </td>
+                                <td data-label="Harga">
+                                    Rp {{ number_format($service->harga_setelah_diskon, 0, ',', '.') }}
+                                </td>
+                                <td data-label="Aksi">
+                                    <button class="btn-add-cart" 
+                                            data-id="{{ $service->id_service }}"
+                                            data-nama="{{ $service->service }}"
+                                            data-harga="{{ $service->harga_setelah_diskon }}"
+                                            data-diskon="{{ $service->diskon }}"
+                                            data-type="service">
+                                        <i class="bi bi-plus-circle"></i>
+                                        Tambah
+                                    </button>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="3" class="text-center">
+                                    <div class="empty-state">
+                                        <i class="bi bi-inbox"></i>
+                                        <p>Tidak ada data service</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+        <!-- ================= END PRODUCTS & SERVICES GRID ================= -->
+
+        <!-- ================= CART SECTION ================= -->
+        <div class="section-wrapper cart-section">
+            <h3 class="section-title">
+                <i class="bi bi-cart"></i> Keranjang Belanja
+            </h3>
+
+            <div class="table-responsive">
                 <table class="table-main">
                     <thead>
                         <tr>
-                            <th>Produk</th>
+                            <th>Produk / Service</th>
                             <th>Harga</th>
                             <th>Jumlah</th>
+                            <th>Diskon</th>
+                            <th>Harga Setelah Diskon</th>
+                            <th>Total Harga</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
-                    <tbody>
-                      @foreach($items as $item)
-<tr>
-    <td>{{ $item->nama_produk }}</td>
-    <td>{{ number_format($item->harga_setelah_diskon, 0, ',', '.') }}</td>
-    <td>
-        <input type="number" 
-               name="qty" 
-               class="form-control qty"
-               data-id="{{ $item->id_produk }}" 
-               value="1" 
-               min="1"
-               max="{{ $item->stok }}"
-               {{ $item->stok == 0 ? 'disabled' : '' }}>
-    </td>
-    <td>
-        <button type="button"
-            class="btn btn-success add-item"
-            data-id="{{ $item->id_produk }}"
-            data-name="{{ $item->nama_produk }}"
-            data-price="{{ $item->harga_jual }}"
-            data-discount="{{ $item->diskon }}"
-            data-stok="{{ $item->stok }}"
-            data-type="produk"
-            {{ $item->stok == 0 ? 'disabled' : '' }}>
-            
-            {{ $item->stok == 0 ? 'Stok Habis' : 'Tambah' }}
-        </button>
-    </td>
-</tr>
-@endforeach
-
+                    <tbody id="cartTableBody">
+                        <tr>
+                            <td colspan="7" class="text-center">
+                                <div class="empty-state">
+                                    <i class="bi bi-cart-x"></i>
+                                    <p>Keranjang belanja masih kosong</p>
+                                </div>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- Daftar Service -->
-            <div class="table-container">
-                <form action="{{ route('sale.index') }}" method="GET" class="search-form">
-                    <input type="text" class="form-control" placeholder="Cari service..." name="q_service" value="{{ request('q_service') }}" style="width: 300px;">
-                    <button type="submit" class="btn-src1">Search</button>
+            <!-- ================= CHECKOUT FORM ================= -->
+            <div class="checkout-section">
+                <form action="{{ route('sale.store') }}" method="POST" id="checkoutForm">
+                    @csrf
+                    
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label for="tanggal_transaksi">
+                                <i class="bi bi-calendar"></i> Tanggal Transaksi
+                            </label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="tanggal_transaksi" 
+                                   name="tanggal_transaksi" 
+                                   value="{{ date('Y-m-d') }}" 
+                                   required>
+                        </div>
+
+                        <div class="form-group col-md-4">
+                            <label for="nama_pelanggan">
+                                <i class="bi bi-person"></i> Nama Pelanggan
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="nama_pelanggan" 
+                                   name="nama_pelanggan" 
+                                   placeholder="Masukkan nama pelanggan" 
+                                   required>
+                        </div>
+
+                        <div class="form-group col-md-4">
+                            <label for="jumlah_bayar">
+                                <i class="bi bi-cash"></i> Jumlah Bayar
+                            </label>
+                            <input type="text" 
+                                   class="form-control rupiah" 
+                                   id="jumlah_bayar" 
+                                   name="jumlah_bayar" 
+                                   placeholder="Masukkan jumlah bayar" 
+                                   autocomplete="off" 
+                                   required>
+                        </div>
+                    </div>
+
+                    <div class="summary-section">
+                        <div class="summary-item">
+                            <span class="summary-label">Total Belanja:</span>
+                            <span class="summary-value" id="totalBelanja">Rp 0</span>
+                        </div>
+                        <div class="summary-item kembalian">
+                            <span class="summary-label">Kembalian:</span>
+                            <span class="summary-value" id="kembalian">Rp 0</span>
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="total_harga" id="totalHargaInput" value="0">
+                    <div id="cartItemsContainer"></div>
+
+                    <div class="checkout-actions">
+                        <button type="button" class="btn-clear-cart" onclick="clearCart()">
+                            <i class="bi bi-trash"></i> Kosongkan Keranjang
+                        </button>
+                        <button type="submit" class="btn-checkout" id="btnCheckout" disabled>
+                            <i class="bi bi-check-circle"></i> Selesaikan Penjualan
+                        </button>
+                    </div>
                 </form>
-                <table class="table-main">
-                    <thead>
-                        <tr>
-                            <th>Service</th>
-                            <th>Harga</th>
-                            <th>Jumlah</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($services as $service)
-                        <tr>
-                            <td>{{ $service->service }}</td>
-                            <td>{{ number_format($service->harga_setelah_diskon, 0, ',', '.') }}</td>
-                            <td>
-                                <input type="number" name="qty" class="form-control qty" data-id="{{ $service->id_service }}" value="1" min="1" max="2">
-                            </td>
-                            <td>
-                                <button type="button" class="btn btn-success add-service" 
-                                    data-id="{{ $service->id_service }}" 
-                                    data-name="{{ $service->service }}" 
-                                    data-price="{{ $service->harga_jual }}"
-                                    data-discount="0"
-                                    data-type="service">Tambah</button>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-            </table>
-            
+            </div>
         </div>
+
     </div>
 </div>
 
-<div class="container-ringkasan"> 
-    <table class="table-main" id="summary-table">
-        <thead>
-            <tr>
-                <th>Produk / Service</th>
-                <th>Harga</th>
-                <th>Jumlah</th>
-                <th>Diskon</th>
-                <th>Harga Setelah Diskon</th>
-                <th>Total Harga</th>
-                <th>Aksi</th>
-            </tr>
-        </thead>
-        <tbody id="summary-body">
-            <!-- Data yang ditambahkan akan muncul di sini -->
-        </tbody>    
-    </table>
-</div>
+<!-- ================= SWEETALERT ================= -->
+@if(session('success'))
+<script>
+Swal.fire({
+    icon: 'success',
+    title: 'Berhasil',
+    text: '{{ session('success') }}',
+    timer: 2000,
+    showConfirmButton: false
+});
+</script>
+@endif
 
-<div class="container-bayar">
-    <form id="sale-form">
-        @csrf
-        <div class="form-wrapper">     
-            <div class="form-group">
-                <label for="tanggal_transaksi">Tanggal Transaksi</label>
-                <input type="date" id="tanggal_transaksi" name="tanggal_transaksi" class="form-control" value="{{ date('Y-m-d') }}" required>
-            </div>
+@if(session('error'))
+<script>
+Swal.fire({
+    icon: 'error',
+    title: 'Gagal',
+    text: '{{ session('error') }}',
+    timer: 2000,
+    showConfirmButton: false
+});
+</script>
+@endif
 
-            <div class="form-group">
-                <label for="nama_pelanggan">Nama Pelanggan</label>
-                <input type="text" id="nama_pelanggan" name="nama_pelanggan" class="form-control" required>
-            </div>
-
-            <div class="form-group">
-                <label for="jumlah_bayar">Jumlah Bayar</label>
-                <input type="number" id="jumlah_bayar" name="jumlah_bayar" class="form-control" required>
-            </div>
-        
-            <div class="form-group">
-                <h4>Total Belanja: <span id="total_harga">Rp. 0</span></h4>
-            </div>
-
-            <div class="form-group"> 
-                <h4>Kembalian: <span id="kembalian">Rp. 0</span></h4>
-            </div>
-        </div>
-        <button type="submit" class="btn add">Selesaikan Penjualan</button>
-    </form>
-</div>
-
-@push('styles')
-<style>
-    body {
-        font-family: 'Open Sans', sans-serif;
-        background-color: #d6ebff;
-        color: #333;
-    }
-
-    .container-daftar {
-        margin-top: 25px;
-        background-color: #fff;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .container-daftar h2 {
-        margin-top : 1px;
-    }
-    .container-daftar h3 {
-        margin-top : 1px;
-    }
-    
-    .container-ringkasan {
-        margin-top: 15px;
-        background-color: #fff;
-        padding: 10px;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .container-ringkasan h2 {
-        margin-top : 1px;
-    }
-
-    .container-ringkasan h3 {
-        margin-top : 1px;
-    }
-
-    .container-bayar {
-        font-family: 'Open Sans', sans-serif;
-        margin-top: 15px;
-        background-color: #fff;
-        padding: 10px;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .container-bayar h2 {
-        margin-top : 1px;
-    }
-
-    .container-bayar h3 {
-        margin-top : 1px;
-    }
-
-    .form-wrapper {
-        display: flex;
-        gap: 5px;
-    }
-
-    .form-wrapper1 {
-        display: flex;
-        gap: 120px;
-    }
-
-    .form-group {
-        margin-top: 8px;
-        margin-left: 10px;
-    }
-
-    .table-wrapper {
-        display: flex;
-        gap: 10px;
-    }
-
-    .table-container {
-        margin-bottom: 5px;
-        flex: 1;
-    }
-    .table-container h3 {
-        margin-bottom: 1px;
-    }
-
-    .table {
-        width: 100%;
-        margin-top: 20px;
-        border-collapse: collapse;
-    }
-
-    .table-striped tr:nth-child(odd) {
-        background-color: #f9f9f9;
-    }
-
-    .table th, .table td {
-        padding: 12px 15px;
-        text-align: left;
-        border-bottom: 1px solid #ddd;
-    }
-
-    .table th {
-        background-color: #007bff;
-        color: #fff;
-    }
-
-    .btn-success {
-        background-color: #28a745;
-        color: white;
-    }
-
-    .btn-success:hover {
-        background-color: #218838;
-    }
-
-    .form-control {
-        width: 100%;
-        padding: 8px;
-        font-size: 10px;
-        margin-bottom: 2px;
-        margin-top: 2px;
-    }
-
-    .form-control-qty{ 
-        width: 100%;
-        padding: 2px;
-        font-size: 10px;
-    }
-    .form-control2 {
-        width: 100%;
-        padding: 8px;
-        font-size: 10px;
-    }
-</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    loadCartFromLocalStorage();
-    updateSummary();
-});
-
+// ================= GLOBAL VARIABLES ================= 
 let cart = [];
 let totalBelanja = 0;
 
-function saveCartToLocalStorage() {
-    localStorage.setItem('salesCart', JSON.stringify(cart));
+// ================= SIDEBAR TOGGLE ================= 
+function toggleSidebar() {
+    document.querySelector('.sidebar').classList.toggle('open');
+    document.querySelector('.sidebar-overlay').classList.toggle('active');
 }
 
-function loadCartFromLocalStorage() {
-    const savedCart = localStorage.getItem('salesCart');
-    if (savedCart) {
-        try {
-            cart = JSON.parse(savedCart);
-        } catch (e) {
-            cart = [];
-        }
-    }
-}
-
-function updateSummary() {
-    totalBelanja = 0;
-    const tbody = document.getElementById('summary-body');
-    tbody.innerHTML = '';
-
-    cart.forEach(item => {
-        const totalItem = item.harga_setelah_diskon * item.jumlah;
-        totalBelanja += totalItem;
-
-        tbody.innerHTML += `
-            <tr>
-                <td>${item.nama}</td>
-                <td>Rp ${item.harga_jual.toLocaleString('id-ID')}</td>
-                <td>${item.jumlah}</td>
-                <td>${item.diskon}%</td>
-                <td>Rp ${item.harga_setelah_diskon.toLocaleString('id-ID')}</td>
-                <td>Rp ${totalItem.toLocaleString('id-ID')}</td>
-                <td><button type="button" class="btn btn-danger remove-item" data-id="${item.id}" data-type="${item.type}">Hapus</button></td>
-            </tr>
-        `;
-    });
-
-    document.getElementById('total_harga').innerText = 'Rp. ' + totalBelanja.toLocaleString('id-ID');
-    hitungKembalian();
-}
-
-function addToCart(id, nama, harga, jumlah, diskon, type) {
-    // Validasi input
-    if (!id || !nama || isNaN(harga) || isNaN(jumlah) || isNaN(diskon)) {
-        console.error('Data tidak valid:', { id, nama, harga, jumlah, diskon, type });
-        alert('Data produk/service tidak valid!');
-        return;
-    }
-
-    const harga_setelah_diskon = harga - (harga * (diskon / 100));
-    const uniqueKey = type + '_' + id;
-    const existing = cart.find(item => (item.type + '_' + item.id) === uniqueKey);
-
-    if (existing) {
-        existing.jumlah += jumlah;
-    } else {
-        const newItem = { 
-            id: String(id),
-            nama: String(nama),
-            harga_jual: Number(harga),
-            jumlah: Number(jumlah),
-            diskon: Number(diskon),
-            harga_setelah_diskon: Number(harga_setelah_diskon),
-            type: String(type)
-        };
-        
-        console.log('Menambahkan item ke cart:', newItem);
-        cart.push(newItem);
-    }
-
-    saveCartToLocalStorage();
-    updateSummary();
-}
-
-function removeFromCart(id, type) {
-    const uniqueKey = type + '_' + id;
-    const index = cart.findIndex(item => (item.type + '_' + item.id) === uniqueKey);
-    
-    if (index !== -1) {
-        cart.splice(index, 1);
-    }
-    
-    saveCartToLocalStorage();
-    updateSummary();
-}
-
-function hitungKembalian() {
-    const bayar = parseInt(document.getElementById('jumlah_bayar').value) || 0;
-    let kembali = bayar - totalBelanja;
-    if (kembali < 0) kembali = 0;
-
-    document.getElementById('kembalian').innerText = 'Rp. ' + kembali.toLocaleString('id-ID');
-}
-
-document.getElementById('jumlah_bayar').addEventListener('input', hitungKembalian);
-
-// ITEM
-document.querySelectorAll('.add-item').forEach(btn => {
-    btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        const tr = this.closest('tr');
-        const jumlah = parseInt(tr.querySelector('.qty').value) || 1;
-        const diskon = parseFloat(this.dataset.discount) || 0;
-        const harga = parseFloat(this.dataset.price);
-
-        console.log('Item - Data:', {
-            id: this.dataset.id,
-            name: this.dataset.name,
-            price: harga,
-            discount: diskon,
-            qty: jumlah
+// ================= SEARCH FUNCTIONALITY ================= 
+$(document).ready(function() {
+    // Search Product
+    $('#searchProduct').on('input', function() {
+        const query = $(this).val().toLowerCase().trim();
+        $('#productTableBody tr').each(function() {
+            const productName = $(this).data('product-search');
+            if (productName && productName.includes(query)) {
+                $(this).show();
+            } else if (productName) {
+                $(this).hide();
+            }
         });
-
-        if (isNaN(harga) || harga <= 0) {
-            alert('Harga produk tidak valid!');
-            return;
-        }
-
-        addToCart(
-            this.dataset.id,
-            this.dataset.name,
-            harga,
-            jumlah,
-            diskon,
-            'produk'
-        );
     });
-});
 
-// SERVICE
-document.querySelectorAll('.add-service').forEach(btn => {
-    btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        const tr = this.closest('tr');
-        const jumlah = parseInt(tr.querySelector('.qty').value) || 1;
-        const harga = parseFloat(this.dataset.price);
-        const diskon = parseFloat(this.dataset.discount) || 0;
-
-        console.log('Service - Data:', {
-            id: this.dataset.id,
-            name: this.dataset.name,
-            price: harga,
-            discount: diskon,
-            qty: jumlah
+    // Search Service
+    $('#searchService').on('input', function() {
+        const query = $(this).val().toLowerCase().trim();
+        $('#serviceTableBody tr').each(function() {
+            const serviceName = $(this).data('service-search');
+            if (serviceName && serviceName.includes(query)) {
+                $(this).show();
+            } else if (serviceName) {
+                $(this).hide();
+            }
         });
-
-        if (isNaN(harga) || harga <= 0) {
-            alert('Harga service tidak valid!');
-            return;
-        }
-
-        addToCart(
-            this.dataset.id,
-            this.dataset.name,
-            harga,
-            jumlah,
-            diskon,
-            'service'
-        );
     });
-});
 
-// REMOVE ITEM
-document.getElementById('summary-body').addEventListener('click', function (e) {
-    if (e.target && e.target.classList.contains('remove-item')) {
-        e.preventDefault();
-        const itemId = e.target.dataset.id;
-        const itemType = e.target.dataset.type;
-        removeFromCart(itemId, itemType);
-    }
-});
+    // ================= ADD TO CART ================= 
+    $(document).on('click', '.btn-add-cart:not(.disabled)', function() {
+        const id = $(this).data('id');
+        const nama = $(this).data('nama');
+        const harga = parseFloat($(this).data('harga'));
+        const diskon = parseFloat($(this).data('diskon'));
+        const type = $(this).data('type');
+        const stok = $(this).data('stok');
 
-// HANDLE SUBMIT FORM - SELESAIKAN PENJUALAN
-document.getElementById('sale-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    if (cart.length === 0) {
-        alert('Keranjang belanja kosong! Silakan tambahkan produk/service terlebih dahulu.');
-        return;
-    }
-    
-    const tanggalTransaksi = document.getElementById('tanggal_transaksi').value;
-    const namaPelanggan = document.getElementById('nama_pelanggan').value;
-    const jumlahBayar = parseFloat(document.getElementById('jumlah_bayar').value);
-    
-    if (!tanggalTransaksi || !namaPelanggan || !jumlahBayar) {
-        alert('Mohon lengkapi semua data transaksi!');
-        return;
-    }
-    
-    if (jumlahBayar < totalBelanja) {
-        alert('Jumlah bayar kurang dari total belanja!');
-        return;
-    }
-    
-    // Format items sesuai ekspektasi backend
-    const formattedItems = cart.map(item => {
-        const formattedItem = {
-            id: String(item.id),
-            type: String(item.type),
-            nama: String(item.nama),
-            harga_jual: Number(item.harga_jual),
-            jumlah: Number(item.jumlah),
-            diskon: Number(item.diskon),
-            harga_setelah_diskon: Number(item.harga_setelah_diskon),
-            total: Number(item.harga_setelah_diskon * item.jumlah)
-        };
+        // Check if item already in cart
+        const existingItem = cart.find(item => item.id === id && item.type === type);
         
-        console.log('Formatted item:', formattedItem);
-        return formattedItem;
-    });
-    
-    // Validasi items sebelum dikirim
-    const invalidItems = formattedItems.filter(item => 
-        isNaN(item.harga_jual) || 
-        item.harga_jual <= 0 || 
-        isNaN(item.jumlah) || 
-        item.jumlah <= 0
-    );
-    
-    if (invalidItems.length > 0) {
-        console.error('Items tidak valid:', invalidItems);
-        alert('Ada item dengan harga atau jumlah tidak valid! Mohon periksa kembali.');
-        return;
-    }
-    
-    const data = {
-        tanggal_transaksi: tanggalTransaksi,
-        nama_pelanggan: namaPelanggan,
-        jumlah_bayar: jumlahBayar,
-        total_belanja: totalBelanja,
-        kembalian: jumlahBayar - totalBelanja,
-        items: formattedItems
-    };
-    
-    console.log('Data yang akan dikirim:', JSON.stringify(data, null, 2));
-    
-    try {
-        const response = await fetch('{{ route("sale.store") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        
-        console.log('Response dari server:', result);
-        
-        if (result.success) {
-            alert('Transaksi berhasil disimpan!\nID Transaksi: ' + result.data.id_penjualan);
-            
-            localStorage.removeItem('salesCart');
-            cart = [];
-            
-            document.getElementById('sale-form').reset();
-            document.getElementById('tanggal_transaksi').value = '{{ date("d-m-y") }}';
-            
-            updateSummary();
-            
+        if (existingItem) {
+            if (type === 'produk' && existingItem.jumlah >= stok) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Stok Tidak Cukup',
+                    text: 'Jumlah melebihi stok yang tersedia!',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                return;
+            }
+            existingItem.jumlah++;
         } else {
-            alert('Gagal menyimpan transaksi: ' + (result.message || 'Terjadi kesalahan'));
-            console.error('Error detail:', result);
+            cart.push({
+                id: id,
+                nama: nama,
+                harga: harga,
+                diskon: diskon,
+                jumlah: 1,
+                type: type,
+                stok: stok || null
+            });
+        }
+
+        updateCart();
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Ditambahkan',
+            text: `${nama} ditambahkan ke keranjang`,
+            timer: 1000,
+            showConfirmButton: false
+        });
+    });
+
+    // ================= UPDATE CART ================= 
+    window.updateCart = function() {
+        const tbody = $('#cartTableBody');
+        tbody.empty();
+
+        if (cart.length === 0) {
+            tbody.html(`
+                <tr>
+                    <td colspan="7" class="text-center">
+                        <div class="empty-state">
+                            <i class="bi bi-cart-x"></i>
+                            <p>Keranjang belanja masih kosong</p>
+                        </div>
+                    </td>
+                </tr>
+            `);
+            totalBelanja = 0;
+            updateSummary();
+            $('#btnCheckout').prop('disabled', true);
+            return;
+        }
+
+        totalBelanja = 0;
+
+        cart.forEach((item, index) => {
+            const hargaSetelahDiskon = item.harga;
+            const totalHarga = hargaSetelahDiskon * item.jumlah;
+            totalBelanja += totalHarga;
+
+            const row = `
+                <tr>
+                    <td data-label="Produk / Service">
+                        <span class="product-name">${item.nama}</span>
+                        <span class="badge badge-info">${item.type === 'produk' ? 'Produk' : 'Service'}</span>
+                    </td>
+                    <td data-label="Harga">Rp ${formatRupiah(item.harga.toString())}</td>
+                    <td data-label="Jumlah">
+                        <div class="quantity-control">
+                            <button type="button" class="btn-qty" onclick="decreaseQty(${index})">
+                                <i class="bi bi-dash"></i>
+                            </button>
+                            <input type="number" 
+                                   class="qty-input" 
+                                   value="${item.jumlah}" 
+                                   min="1" 
+                                   ${item.stok ? 'max="' + item.stok + '"' : ''}
+                                   onchange="updateQty(${index}, this.value)">
+                            <button type="button" class="btn-qty" onclick="increaseQty(${index})">
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td data-label="Diskon">${item.diskon}%</td>
+                    <td data-label="Harga Setelah Diskon">Rp ${formatRupiah(hargaSetelahDiskon.toString())}</td>
+                    <td data-label="Total Harga">
+                        <strong>Rp ${formatRupiah(totalHarga.toString())}</strong>
+                    </td>
+                    <td data-label="Aksi">
+                        <button class="btn-delete" onclick="removeFromCart(${index})" title="Hapus">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+
+        updateSummary();
+        $('#btnCheckout').prop('disabled', false);
+    }
+
+    // ================= QUANTITY CONTROLS ================= 
+    window.increaseQty = function(index) {
+        const item = cart[index];
+        if (item.type === 'produk' && item.jumlah >= item.stok) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Stok Tidak Cukup',
+                text: 'Jumlah melebihi stok yang tersedia!',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            return;
+        }
+        cart[index].jumlah++;
+        updateCart();
+    }
+
+    window.decreaseQty = function(index) {
+        if (cart[index].jumlah > 1) {
+            cart[index].jumlah--;
+            updateCart();
+        } else {
+            removeFromCart(index);
+        }
+    }
+
+    window.updateQty = function(index, value) {
+        const qty = parseInt(value);
+        const item = cart[index];
+        
+        if (qty < 1) {
+            removeFromCart(index);
+            return;
         }
         
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Terjadi kesalahan saat menyimpan transaksi!');
+        if (item.type === 'produk' && qty > item.stok) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Stok Tidak Cukup',
+                text: 'Jumlah melebihi stok yang tersedia!',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            updateCart();
+            return;
+        }
+        
+        cart[index].jumlah = qty;
+        updateCart();
     }
+
+    // ================= REMOVE FROM CART ================= 
+    window.removeFromCart = function(index) {
+        Swal.fire({
+            title: 'Hapus Item?',
+            text: 'Apakah Anda yakin ingin menghapus item ini dari keranjang?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: '<i class="fas fa-trash"></i> Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                cart.splice(index, 1);
+                updateCart();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Dihapus',
+                    text: 'Item berhasil dihapus dari keranjang',
+                    timer: 1000,
+                    showConfirmButton: false
+                });
+            }
+        });
+    }
+
+    // ================= CLEAR CART ================= 
+    window.clearCart = function() {
+        if (cart.length === 0) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Keranjang Kosong',
+                text: 'Tidak ada item di keranjang',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            return;
+        }
+
+        Swal.fire({
+            title: 'Kosongkan Keranjang?',
+            text: 'Semua item akan dihapus dari keranjang!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: '<i class="bi bi-trash"></i> Ya, Kosongkan!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                cart = [];
+                updateCart();
+                $('#jumlah_bayar').val('');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Dikosongkan',
+                    text: 'Keranjang berhasil dikosongkan',
+                    timer: 1000,
+                    showConfirmButton: false
+                });
+            }
+        });
+    }
+
+    // ================= UPDATE SUMMARY ================= 
+    function updateSummary() {
+        $('#totalBelanja').text('Rp ' + formatRupiah(totalBelanja.toString()));
+        $('#totalHargaInput').val(totalBelanja);
+        calculateKembalian();
+    }
+
+    // ================= CALCULATE KEMBALIAN ================= 
+    function calculateKembalian() {
+        const jumlahBayar = parseFloat($('#jumlah_bayar').val().replace(/\./g, '')) || 0;
+        const kembalian = jumlahBayar - totalBelanja;
+        
+        if (kembalian >= 0) {
+            $('#kembalian').text('Rp ' + formatRupiah(kembalian.toString()));
+            $('#kembalian').removeClass('text-danger').addClass('text-success');
+        } else {
+            $('#kembalian').text('Rp ' + formatRupiah(Math.abs(kembalian).toString()));
+            $('#kembalian').removeClass('text-success').addClass('text-danger');
+        }
+    }
+
+    // ================= JUMLAH BAYAR INPUT ================= 
+    $('#jumlah_bayar').on('input', function() {
+        calculateKembalian();
+    });
+
+    // ================= FORMAT RUPIAH ================= 
+    $(document).on('input', '.rupiah', function() {
+        let val = $(this).val().replace(/[^0-9]/g, '');
+        $(this).val(formatRupiah(val));
+    });
+
+    function formatRupiah(angka) {
+        return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    // ================= FORM SUBMIT ================= 
+    $('#checkoutForm').on('submit', function(e) {
+        e.preventDefault();
+
+        if (cart.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Keranjang Kosong',
+                text: 'Silakan tambahkan produk atau service terlebih dahulu!',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            return false;
+        }
+
+        const jumlahBayar = parseFloat($('#jumlah_bayar').val().replace(/\./g, '')) || 0;
+        
+        if (jumlahBayar < totalBelanja) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Jumlah Bayar Kurang',
+                text: 'Jumlah bayar tidak mencukupi!',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            return false;
+        }
+
+        // Prepare cart items untuk dikirim ke controller
+        $('#cartItemsContainer').empty();
+        
+        cart.forEach((item, index) => {
+            // Hitung harga_jual asli sebelum diskon
+            const hargaJual = item.diskon > 0 
+                ? Math.round(item.harga / (1 - item.diskon / 100))
+                : item.harga;
+            
+            $('#cartItemsContainer').append(`
+                <input type="hidden" name="items[${index}][id]" value="${item.id}">
+                <input type="hidden" name="items[${index}][nama]" value="${item.nama}">
+                <input type="hidden" name="items[${index}][type]" value="${item.type}">
+                <input type="hidden" name="items[${index}][harga_jual]" value="${hargaJual}">
+                <input type="hidden" name="items[${index}][jumlah]" value="${item.jumlah}">
+                <input type="hidden" name="items[${index}][diskon]" value="${item.diskon}">
+                <input type="hidden" name="items[${index}][harga_setelah_diskon]" value="${item.harga}">
+            `);
+        });
+
+        Swal.fire({
+            title: 'Konfirmasi Transaksi',
+            html: `
+                <div style="text-align: left; padding: 10px;">
+                    <p><strong>Pelanggan:</strong> ${$('#nama_pelanggan').val()}</p>
+                    <p><strong>Total Belanja:</strong> Rp ${formatRupiah(totalBelanja.toString())}</p>
+                    <p><strong>Jumlah Bayar:</strong> Rp ${formatRupiah(jumlahBayar.toString())}</p>
+                    <p><strong>Kembalian:</strong> Rp ${formatRupiah((jumlahBayar - totalBelanja).toString())}</p>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: '<i class="bi bi-check-circle"></i> Ya, Proses!',
+            cancelButtonText: 'Batal',
+            showLoaderOnConfirm: true,
+            preConfirm: () => {
+                return fetch('{{ route("sale.store") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        tanggal_transaksi: $('#tanggal_transaksi').val(),
+                        nama_pelanggan: $('#nama_pelanggan').val(),
+                        jumlah_bayar: jumlahBayar,
+                        items: cart.map(item => ({
+                            id: item.id,
+                            nama: item.nama,
+                            type: item.type,
+                            harga_jual: item.diskon > 0 
+                                ? Math.round(item.harga / (1 - item.diskon / 100))
+                                : item.harga,
+                            jumlah: item.jumlah,
+                            diskon: item.diskon,
+                            harga_setelah_diskon: item.harga
+                        }))
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => Promise.reject(err));
+                    }
+                    return response.json();
+                })
+                .catch(error => {
+                    Swal.showValidationMessage(
+                        `Request failed: ${error.message || 'Unknown error'}`
+                    );
+                });
+            },
+            allowOutsideClick: () => !Swal.isLoading()
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const response = result.value;
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Transaksi Berhasil!',
+                    html: `
+                        <div style="text-align: left; padding: 10px;">
+                            <p><strong>ID Penjualan:</strong> ${response.data.id_penjualan}</p>
+                            <p><strong>Total Belanja:</strong> Rp ${formatRupiah(response.data.total_belanja.toString())}</p>
+                            <p><strong>Kembalian:</strong> Rp ${formatRupiah(response.data.kembalian.toString())}</p>
+                        </div>
+                    `,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#10b981'
+                }).then(() => {
+                    // Reset form dan cart
+                    cart = [];
+                    updateCart();
+                    $('#checkoutForm')[0].reset();
+                    $('#tanggal_transaksi').val('{{ date("Y-m-d") }}');
+                    $('#jumlah_bayar').val('');
+                    
+                    // Reload halaman untuk update stok
+                    window.location.reload();
+                });
+            }
+        });
+    });
 });
 </script>
 

@@ -2,18 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Sale extends Model
 {
-    use HasFactory;
-    
     protected $table = 'sales';
-    protected $primaryKey = 'id_penjualan'; 
-    public $incrementing = false; // FALSE karena kita generate manual
-    protected $keyType = 'string'; // STRING karena id_penjualan char(5)
-    
+    protected $primaryKey = 'id_penjualan';
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
         'id_penjualan',
         'id_user',
@@ -22,25 +20,69 @@ class Sale extends Model
         'total_bayar',
         'jumlah_bayar',
         'kembalian',
-        'tanggal_transaksi'
+        'tanggal_transaksi',
     ];
-    
-     public function user()
+
+    /**
+     * PENTING: Cast tanggal_transaksi ke datetime
+     * Ini memastikan Carbon dapat handle timezone dengan benar
+     */
+    protected $casts = [
+        'tanggal_transaksi' => 'datetime',
+        'total_belanja' => 'decimal:2',
+        'total_bayar' => 'decimal:2',
+        'jumlah_bayar' => 'decimal:2',
+        'kembalian' => 'decimal:2',
+    ];
+
+    /**
+     * Set timezone default untuk dates
+     */
+    protected $dateFormat = 'Y-m-d H:i:s';
+
+    // Relationships
+    public function user()
     {
         return $this->belongsTo(User::class, 'id_user', 'id_user');
     }
-    
-    public $timestamps = true;
 
-     public function customer()
+    public function customer()
     {
         return $this->belongsTo(Customer::class, 'id_pelanggan', 'id_pelanggan');
     }
-    
-    
-    // Relasi ke SaleDetail
+
     public function saleDetails()
     {
         return $this->hasMany(SaleDetail::class, 'id_penjualan', 'id_penjualan');
+    }
+
+    /**
+     * Accessor untuk mendapatkan tanggal dengan format Indonesia
+     */
+    public function getTanggalFormatAttribute()
+    {
+        return Carbon::parse($this->tanggal_transaksi)
+            ->timezone('Asia/Jakarta')
+            ->translatedFormat('d F Y');
+    }
+
+    /**
+     * Accessor untuk mendapatkan jam transaksi
+     */
+    public function getJamTransaksiAttribute()
+    {
+        return Carbon::parse($this->tanggal_transaksi)
+            ->timezone('Asia/Jakarta')
+            ->format('H:i');
+    }
+
+    /**
+     * Accessor untuk mendapatkan tanggal dan jam lengkap
+     */
+    public function getTanggalLengkapAttribute()
+    {
+        return Carbon::parse($this->tanggal_transaksi)
+            ->timezone('Asia/Jakarta')
+            ->translatedFormat('d F Y H:i');
     }
 }

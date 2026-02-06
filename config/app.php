@@ -70,7 +70,8 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // PERUBAHAN: Ganti 'UTC' menjadi 'Asia/Jakarta'
+    'timezone' => 'Asia/Jakarta',
 
     /*
     |--------------------------------------------------------------------------
@@ -83,7 +84,8 @@ return [
     |
     */
 
-    'locale' => 'en',
+    // PERUBAHAN: Ganti 'en' menjadi 'id' untuk Bahasa Indonesia
+    'locale' => 'id',
 
     /*
     |--------------------------------------------------------------------------
@@ -109,7 +111,8 @@ return [
     |
     */
 
-    'faker_locale' => 'en_US',
+    // PERUBAHAN: Ganti 'en_US' menjadi 'id_ID' untuk data Indonesia
+    'faker_locale' => 'id_ID',
 
     /*
     |--------------------------------------------------------------------------

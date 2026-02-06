@@ -11,22 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('purchase', function (Blueprint $table) {
+        Schema::create('purchases', function (Blueprint $table) {
             $table->char('id_pembelian', 5)->primary();
-            $table->date('tanggal_pembelian');
-            $table->string('nama_supplier', 255);
-            $table->string('nomor_invoice', 100)->unique();
+            $table->date('tgl_pembelian');
+            $table->char('id_supplier', 5);
+            $table->char('id_user', 5);
             $table->decimal('total_pembelian', 15, 2)->default(0);
-            $table->enum('status', ['pending', 'completed', 'cancelled'])->default('completed');
-            $table->unsignedBigInteger('created_by')->nullable();
-            $table->text('notes')->nullable();
+    
             $table->timestamps();
 
-            // Index untuk performa
-            $table->index('tanggal_pembelian');
-            $table->index('nama_supplier');
-            $table->index('nomor_invoice');
-            $table->index('status');
+             $table->foreign('id_supplier')->references('id_supplier')->on('suppliers')->onDelete('cascade');
+             $table->foreign('id_user')->references('id_user')->on('users')->onDelete('cascade');
+             $table->foreign('id_produk')->references('id_produk')->on('items')->onDelete('cascade');                
+          
         });
     }
 
@@ -35,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('purchase');
+        Schema::dropIfExists('purchases');
     }
 };
