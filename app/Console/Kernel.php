@@ -12,13 +12,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Menjadwalkan pembaruan FSN setiap 1 bulan pada jam 00:00
-        $schedule->call(function () {
-            app(ItemController::class)->updateFSN();
-        })->monthlyOn(1, '00:00');
-
-        // Anda bisa menambahkan jadwal lainnya di sini, misalnya:
-        // $schedule->command('inspire')->hourly();
+        // ⭐ FSN Analysis Otomatis Setiap Tanggal 1 Jam 02:00 Pagi
+        $schedule->command('fsn:process-monthly --periode=30')
+                 ->monthly()
+                 ->at('02:00')
+                 ->appendOutputTo(storage_path('logs/fsn-scheduler.log'));
     }
 
     /**

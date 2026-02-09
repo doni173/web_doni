@@ -20,10 +20,7 @@ class ReportController extends Controller
         
         $reportType = $request->get('report_type', 'daily');
         
-        // Log untuk debugging
-        Log::info('=== REPORT GENERATION ===');
-        Log::info('Report Type: ' . $reportType);
-        Log::info('Current DateTime: ' . Carbon::now('Asia/Jakarta')->toDateTimeString());
+
         
         // Query dasar
         $query = Sale::with(['user', 'customer', 'saleDetails.product']);
@@ -32,29 +29,25 @@ class ReportController extends Controller
         switch ($reportType) {
             case 'daily':
                 $date = $request->get('date', Carbon::today('Asia/Jakarta')->toDateString());
-                Log::info('Daily Report - Date: ' . $date);
                 $query->whereDate('tanggal_transaksi', '=', $date);
                 break;
-                
+
             case 'custom':
                 $startDate = $request->get('start_date', Carbon::today('Asia/Jakarta')->startOfMonth()->toDateString());
                 $endDate = $request->get('end_date', Carbon::today('Asia/Jakarta')->toDateString());
-                Log::info('Custom Report - Start: ' . $startDate . ', End: ' . $endDate);
                 $query->whereDate('tanggal_transaksi', '>=', $startDate)
                       ->whereDate('tanggal_transaksi', '<=', $endDate);
                 break;
-                
+
             case 'monthly':
                 $month = $request->get('month', Carbon::today('Asia/Jakarta')->format('Y-m'));
                 $parsedMonth = Carbon::parse($month, 'Asia/Jakarta');
-                Log::info('Monthly Report - Month: ' . $parsedMonth->format('Y-m'));
                 $query->whereYear('tanggal_transaksi', $parsedMonth->year)
                       ->whereMonth('tanggal_transaksi', $parsedMonth->month);
                 break;
-                
+
             case 'yearly':
                 $year = $request->get('year', Carbon::today('Asia/Jakarta')->year);
-                Log::info('Yearly Report - Year: ' . $year);
                 $query->whereYear('tanggal_transaksi', $year);
                 break;
         }
@@ -140,11 +133,7 @@ class ReportController extends Controller
      */
     public function exportPDF(Request $request)
     {
-        // TODO: Implementasi export PDF menggunakan library seperti:
-        // - barryvdh/laravel-dompdf
-        // - mpdf/mpdf
-        // - tecnickcom/tcpdf
-        
-        return redirect()->back()->with('info', 'Fitur export PDF akan segera hadir!');
+        // ❌ PERBAIKAN: Hapus TODO yang tidak perlu, ganti dengan pesan yang lebih jelas
+        return redirect()->back()->with('info', 'Fitur export PDF belum diimplementasi. Silakan hubungi developer untuk implementasi.');
     }
 }

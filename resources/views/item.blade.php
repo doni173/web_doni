@@ -13,6 +13,30 @@
     
     <!-- JavaScript Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- STYLE TAMBAHAN UNTUK KOLOM FSN -->
+    <style>
+        /* Style khusus untuk kolom FSN agar rapi */
+        .fsn-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .fsn-badge {
+            display: inline-block;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .fsn-tor {
+            font-size: 10px;
+            color: #666;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+    </style>
 </head>
 
 <body>
@@ -123,24 +147,38 @@
                                 <span class="stock-number">{{ $item->stok }}</span>
                             </td>
                             <td data-label="Satuan">{{ $item->satuan }}</td>
+                            
+                           <!-- ========== BAGIAN FSN YANG SUDAH DIPERBAIKI ========== -->
                             <td data-label="FSN">
-                                @if($item->FSN == 'NA')
-                                    <span class="status-badge status-normal">NA</span>
-                                @else
-                                    <span class="status-badge 
-                                        @if($item->FSN == 'F') status-normal 
-                                        @elseif($item->FSN == 'S') status-medium 
-                                        @elseif($item->FSN == 'N') status-high 
-                                        @endif">
-                                        {{ $item->FSN }}
-                                    </span>
-                                    @if($item->tor_value !== null)
-                                        <br><small style="color: #666; font-size: 10px;">
-                                            TOR: {{ number_format($item->tor_value, 2) }}
-                                        </small>
+                                <div class="fsn-container">
+                                    @if($item->FSN == 'NA')
+                                        <span class="status-badge status-normal fsn-badge">NA</span>
+                                        <span class="fsn-tor" style="font-size: 9px; color: #999;">
+                                            Umur: {{ $item->umur_hari }} hari
+                                        </span>
+                                    @else
+                                        <span class="status-badge fsn-badge
+                                            @if($item->FSN == 'F') status-normal 
+                                            @elseif($item->FSN == 'S') status-medium 
+                                            @elseif($item->FSN == 'N') status-high 
+                                            @endif">
+                                            {{ $item->FSN }}
+                                        </span>
+                                        @if($item->tor_value !== null && $item->tor_value > 0)
+                                            <span class="fsn-tor">
+                                                TOR: {{ number_format($item->tor_value, 2) }}
+                                            </span>
+                                        @endif
+                                        @if($item->consecutive_n_months > 0)
+                                            <span class="fsn-tor" style="color: #ef4444;">
+                                                {{ $item->consecutive_n_months }}x N
+                                            </span>
+                                        @endif
                                     @endif
-                                @endif
+                                </div>
                             </td>
+                            <!-- ========== AKHIR BAGIAN FSN ========== -->
+                            
                             <td data-label="Harga Beli">Rp {{ number_format($item->modal, 0, ',', '.') }}</td>
                             <td data-label="Harga Jual">Rp {{ number_format($item->harga_jual, 0, ',', '.') }}</td>
                             <td data-label="Diskon">{{ $item->diskon }}%</td>
@@ -519,21 +557,25 @@
                                 required>
                         </div>
 
-                        <!-- Diskon -->
+                        <!-- Diskon (READ ONLY - Otomatis dari FSN) -->
                         <div class="form-group">
                             <label for="diskon{{ $item->id_produk }}">
-                                Diskon (%) <span style="color: red;">*</span>
+                                Diskon (%) <span style="color: #666; font-weight: normal;">(Otomatis dari FSN)</span>
                             </label>
-                            <input 
-                                type="number" 
-                                class="form-control diskon" 
-                                id="diskon{{ $item->id_produk }}" 
-                                name="diskon" 
-                                value="{{ $item->diskon }}" 
-                                min="0" 
-                                max="100" 
-                                step="1" 
-                                required>
+                            <input
+                                type="number"
+                                class="form-control"
+                                id="diskon{{ $item->id_produk }}"
+                                value="{{ $item->diskon }}"
+                                min="0"
+                                max="100"
+                                step="1"
+                                readonly
+                                style="background-color: #f8f9fa; cursor: not-allowed;">
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                Diskon diatur otomatis berdasarkan analisis FSN. Tidak dapat diubah manual.
+                            </small>
                         </div>
 
                         <!-- Footer Buttons -->

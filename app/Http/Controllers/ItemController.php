@@ -10,6 +10,7 @@ use App\Models\Supplier;
 use App\Services\FSNCalculationService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class ItemController extends Controller
 {
@@ -83,45 +84,64 @@ class ItemController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'nama_produk' => 'required|string|max:100',
-            'tanggal_masuk' => 'nullable|date|before_or_equal:today',
-            'harga_jual' => 'required|numeric|min:0',
-            'id_kategori' => 'required|exists:categories,id_kategori',
-            'id_brand' => 'required|exists:brands,id_brand',
-            'id_supplier' => 'required|exists:suppliers,id_supplier',
-            'stok' => 'required|numeric|min:0',
-            'satuan' => 'required|string|max:30',
-            'modal' => 'required|numeric|min:0',
-            'diskon' => 'required|numeric|min:0|max:100',
-        ]);
+        try {
+            $validated = $request->validate([
+                'nama_produk' => 'required|string|max:100',
+                'tanggal_masuk' => 'nullable|date|before_or_equal:today',
+                'harga_jual' => 'required|numeric|min:0',
+                'id_kategori' => 'required|exists:categories,id_kategori',
+                'id_brand' => 'required|exists:brands,id_brand',
+                'id_supplier' => 'required|exists:suppliers,id_supplier',
+                'stok' => 'required|numeric|min:0',
+                'satuan' => 'required|string|max:30',
+                'modal' => 'required|numeric|min:0',
+                'diskon' => 'required|numeric|min:0|max:100',
+            ]);
 
-        $idProduk = $this->generateProductId();
-        $hargaSetelahDiskon = $this->calculateDiscountedPrice(
-            $validated['harga_jual'],
-            $validated['diskon']
-        );
+            $idProduk = $this->generateProductId();
+            
+            // ✅ PERBAIKAN: Diskon awal = 0 (akan dihitung otomatis oleh FSN)
+            $hargaSetelahDiskon = $validated['harga_jual']; // Tanpa diskon dulu
 
-        Item::create([
-            'id_produk' => $idProduk,
-            'tanggal_masuk' => $validated['tanggal_masuk'] ?? now(),
-            'nama_produk' => $validated['nama_produk'],
-            'id_kategori' => $validated['id_kategori'],
-            'id_brand' => $validated['id_brand'],
-            'id_supplier' => $validated['id_supplier'],
-            'harga_jual' => $validated['harga_jual'],
-            'stok' => $validated['stok'],
-            'satuan' => $validated['satuan'],
-            'modal' => $validated['modal'],
-            'FSN' => 'NA',
-            'tor_value' => null,
-            'diskon' => $validated['diskon'],
-            'harga_setelah_diskon' => $hargaSetelahDiskon,
-        ]);
+            Item::create([
+                'id_produk' => $idProduk,
+                'tanggal_masuk' => $validated['tanggal_masuk'] ?? now(),
+                'nama_produk' => $validated['nama_produk'],
+                'id_kategori' => $validated['id_kategori'],
+                'id_brand' => $validated['id_brand'],
+                'id_supplier' => $validated['id_supplier'],
+                'harga_jual' => $validated['harga_jual'],
+                'stok' => $validated['stok'],
+                'satuan' => $validated['satuan'],
+                'modal' => $validated['modal'],
+                'FSN' => 'NA',
+                'tor_value' => null,
+                'diskon' => 0, // ✅ Set 0, akan diupdate otomatis
+                'harga_setelah_diskon' => $hargaSetelahDiskon,
+                'consecutive_n_months' => 0,
+            ]);
 
-        return redirect()
-            ->route('items.index')
-            ->with('success', 'Produk berhasil ditambahkan. FSN akan dihitung setelah periode observasi.');
+            Log::info('Item Created', [
+                'id_produk' => $idProduk,
+                'nama_produk' => $validated['nama_produk'],
+                'tanggal_masuk' => $validated['tanggal_masuk'] ?? now()
+            ]);
+
+            return redirect()
+                ->route('items.index')
+                ->with('success', 'Produk berhasil ditambahkan. FSN akan dihitung setelah periode observasi ' . self::MIN_OBSERVATION_DAYS . ' hari.');
+                
+        } catch (\Exception $e) {
+            Log::error('Item Creation Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Gagal menambahkan produk: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -133,42 +153,64 @@ class ItemController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $validated = $request->validate([
-            'nama_produk' => 'required|string|max:100',
-            'tanggal_masuk' => 'required|date|before_or_equal:today',
-            'harga_jual' => 'required|numeric|min:0',
-            'id_kategori' => 'required|exists:categories,id_kategori',
-            'id_brand' => 'required|exists:brands,id_brand',
-            'id_supplier' => 'required|exists:suppliers,id_supplier',
-            'stok' => 'required|numeric|min:0',
-            'satuan' => 'required|string|max:30',
-            'modal' => 'required|numeric|min:0',
-            'diskon' => 'required|numeric|min:0|max:100',
-        ]);
+        try {
+            $validated = $request->validate([
+                'nama_produk' => 'required|string|max:100',
+                'tanggal_masuk' => 'required|date|before_or_equal:today',
+                'harga_jual' => 'required|numeric|min:0',
+                'id_kategori' => 'required|exists:categories,id_kategori',
+                'id_brand' => 'required|exists:brands,id_brand',
+                'id_supplier' => 'required|exists:suppliers,id_supplier',
+                'stok' => 'required|numeric|min:0',
+                'satuan' => 'required|string|max:30',
+                'modal' => 'required|numeric|min:0',
+                // ❌ PERBAIKAN: Hapus validasi diskon karena tidak digunakan (diskon diatur otomatis oleh FSN)
+                // 'diskon' => 'required|numeric|min:0|max:100',
+            ]);
 
-        $item = Item::findOrFail($id);
-        $hargaSetelahDiskon = $this->calculateDiscountedPrice(
-            $validated['harga_jual'],
-            $validated['diskon']
-        );
+            $item = Item::findOrFail($id);
 
-        $item->update([
-            'tanggal_masuk' => $validated['tanggal_masuk'],
-            'nama_produk' => $validated['nama_produk'],
-            'id_kategori' => $validated['id_kategori'],
-            'id_brand' => $validated['id_brand'],
-            'id_supplier' => $validated['id_supplier'],
-            'harga_jual' => $validated['harga_jual'],
-            'stok' => $validated['stok'],
-            'satuan' => $validated['satuan'],
-            'modal' => $validated['modal'],
-            'diskon' => $validated['diskon'],
-            'harga_setelah_diskon' => $hargaSetelahDiskon,
-        ]);
+            // ✅ PERBAIKAN: Simpan FSN dan diskon lama
+            $oldFSN = $item->FSN;
+            $oldDiskon = $item->diskon;
+            $oldConsecutive = $item->consecutive_n_months;
 
-        return redirect()
-            ->route('items.index')
-            ->with('success', 'Produk berhasil diperbarui.');
+            $item->update([
+                'tanggal_masuk' => $validated['tanggal_masuk'],
+                'nama_produk' => $validated['nama_produk'],
+                'id_kategori' => $validated['id_kategori'],
+                'id_brand' => $validated['id_brand'],
+                'id_supplier' => $validated['id_supplier'],
+                'harga_jual' => $validated['harga_jual'],
+                'stok' => $validated['stok'],
+                'satuan' => $validated['satuan'],
+                'modal' => $validated['modal'],
+                // ✅ PERBAIKAN: Diskon manual TIDAK BOLEH override diskon FSN otomatis
+                // Diskon diatur otomatis berdasarkan FSN analysis
+            ]);
+
+            Log::info('Item Updated', [
+                'id_produk' => $id,
+                'nama_produk' => $validated['nama_produk'],
+                'fsn_preserved' => $oldFSN,
+                'diskon_preserved' => $oldDiskon
+            ]);
+
+            return redirect()
+                ->route('items.index')
+                ->with('success', 'Produk berhasil diperbarui. Diskon FSN otomatis tetap terjaga.');
+
+        } catch (\Exception $e) {
+            Log::error('Item Update Error', [
+                'id_produk' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Gagal memperbarui produk: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -179,44 +221,96 @@ class ItemController extends Controller
      */
     public function destroy($id)
     {
-        $item = Item::findOrFail($id);
-        $item->delete();
+        try {
+            $item = Item::findOrFail($id);
+            $itemName = $item->nama_produk;
+            
+            $item->delete();
 
-        return redirect()
-            ->route('items.index')
-            ->with('success', 'Produk berhasil dihapus.');
+            Log::info('Item Deleted', [
+                'id_produk' => $id,
+                'nama_produk' => $itemName
+            ]);
+
+            return redirect()
+                ->route('items.index')
+                ->with('success', "Produk '{$itemName}' berhasil dihapus.");
+                
+        } catch (\Exception $e) {
+            Log::error('Item Deletion Error', [
+                'id_produk' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()
+                ->back()
+                ->with('error', 'Gagal menghapus produk: ' . $e->getMessage());
+        }
     }
 
     /**
-     * Calculate FSN for all eligible items
-     * Only calculates for items that have been in inventory for at least MIN_OBSERVATION_DAYS
+     * ✅ PERBAIKAN: Calculate FSN untuk semua item yang eligible
      *
      * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function calculateFSN(Request $request)
     {
-        $periode = $request->input('periode', self::DEFAULT_FSN_PERIOD);
-        $this->fsnService->setPeriode($periode);
+        try {
+            $periode = $request->input('periode', self::DEFAULT_FSN_PERIOD);
+            $this->fsnService->setPeriode($periode);
 
-        $items = Item::all();
-        $calculated = 0;
-        $skipped = 0;
+            // ✅ Gunakan scope eligibleForFsn
+            $items = Item::eligibleForFsn()->get();
+            $allItems = Item::count();
+            
+            $calculated = 0;
+            $skipped = 0;
+            $errors = 0;
 
-        foreach ($items as $item) {
-            if ($this->isEligibleForFSNCalculation($item)) {
-                $this->fsnService->calculateSingleItemSmart($item->id_produk);
-                $calculated++;
-            } else {
-                $skipped++;
+            foreach ($items as $item) {
+                try {
+                    $result = $this->fsnService->calculateSingleItemSmart($item->id_produk);
+                    
+                    if ($result['fsn'] !== 'NA') {
+                        $calculated++;
+                    } else {
+                        $skipped++;
+                    }
+                } catch (\Exception $e) {
+                    $errors++;
+                    Log::error('FSN Calculation Error', [
+                        'item' => $item->id_produk,
+                        'error' => $e->getMessage()
+                    ]);
+                }
             }
+
+            $message = $this->generateFSNCalculationMessage($calculated, $skipped, $errors, $allItems, $periode);
+
+            Log::info('FSN Bulk Calculation', [
+                'periode' => $periode,
+                'total_items' => $allItems,
+                'eligible' => $items->count(),
+                'calculated' => $calculated,
+                'skipped' => $skipped,
+                'errors' => $errors
+            ]);
+
+            return redirect()
+                ->route('items.index')
+                ->with('success', $message);
+                
+        } catch (\Exception $e) {
+            Log::error('FSN Bulk Calculation Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()
+                ->back()
+                ->with('error', 'Gagal menghitung FSN: ' . $e->getMessage());
         }
-
-        $message = $this->generateFSNCalculationMessage($calculated, $skipped, $periode);
-
-        return redirect()
-            ->route('items.index')
-            ->with('success', $message);
     }
 
     /**
@@ -266,35 +360,25 @@ class ItemController extends Controller
     }
 
     /**
-     * Check if item is eligible for FSN calculation
-     *
-     * @param Item $item
-     * @return bool
-     */
-    private function isEligibleForFSNCalculation(Item $item)
-    {
-        if (!$item->tanggal_masuk) {
-            return false;
-        }
-
-        $daysSinceAdded = Carbon::parse($item->tanggal_masuk)->diffInDays(Carbon::now());
-        return $daysSinceAdded >= self::MIN_OBSERVATION_DAYS;
-    }
-
-    /**
-     * Generate FSN calculation result message
+     * ✅ PERBAIKAN: Generate pesan hasil perhitungan FSN yang lebih informatif
      *
      * @param int $calculated
      * @param int $skipped
+     * @param int $errors
+     * @param int $total
      * @param int $periode
      * @return string
      */
-    private function generateFSNCalculationMessage($calculated, $skipped, $periode)
+    private function generateFSNCalculationMessage($calculated, $skipped, $errors, $total, $periode)
     {
-        $message = "FSN berhasil dihitung untuk {$calculated} produk (periode {$periode} hari).";
+        $message = "FSN berhasil dihitung untuk {$calculated} produk dari {$total} total produk (periode {$periode} hari).";
         
         if ($skipped > 0) {
             $message .= " {$skipped} produk dilewati karena belum mencapai " . self::MIN_OBSERVATION_DAYS . " hari observasi.";
+        }
+
+        if ($errors > 0) {
+            $message .= " {$errors} produk gagal dihitung (cek log untuk detail).";
         }
 
         return $message;
@@ -308,10 +392,12 @@ class ItemController extends Controller
     private function getFSNSummary()
     {
         return [
-            'fast_moving' => Item::where('FSN', 'F')->count(),
-            'slow_moving' => Item::where('FSN', 'S')->count(),
-            'non_moving' => Item::where('FSN', 'N')->count(),
-            'not_analyzed' => Item::where('FSN', 'NA')->count(),
+            'fast_moving' => Item::fastMoving()->count(),
+            'slow_moving' => Item::slowMoving()->count(),
+            'non_moving' => Item::nonMoving()->count(),
+            'not_analyzed' => Item::notAnalyzed()->count(),
+            'with_discount' => Item::where('diskon', '>', 0)->count(),
+            'total' => Item::count(),
         ];
     }
 }

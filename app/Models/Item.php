@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Item extends Model
 {
@@ -16,54 +17,73 @@ class Item extends Model
 
     protected $fillable = [
         'id_produk',
-        'tanggal_masuk',
         'nama_produk',
+        'tanggal_masuk',
         'id_kategori',
         'id_brand',
         'id_supplier',
-        'harga_jual',
-        'stok',
-        'stok_awal',
         'satuan',
+        'stok',
         'modal',
+        'harga_jual',
+        'diskon',
+        'harga_setelah_diskon',
         'FSN',
         'tor_value',
         'last_fsn_calculation',
-        'days_as_n',
-        'n_status_started_at',
-        'diskon',
-        'auto_discount',
-        'is_auto_discount_active',
-        'harga_setelah_diskon',
+        'consecutive_n_months', // ⭐ BARU
     ];
 
     protected $casts = [
-        'tanggal_masuk' => 'datetime',
+        'tanggal_masuk' => 'date',
         'last_fsn_calculation' => 'datetime',
-        'n_status_started_at' => 'datetime',
-        'is_auto_discount_active' => 'boolean',
-        'auto_discount' => 'decimal:2',
+        'tor_value' => 'decimal:2',
         'diskon' => 'decimal:2',
+        'harga_setelah_diskon' => 'decimal:2',
     ];
 
-    /**
-     * Get total discount (manual + auto)
-     */
-    public function getTotalDiscountAttribute()
+    // ⭐ Accessor untuk umur barang (dalam hari)
+    public function getUmurHariAttribute()
     {
-        return $this->diskon + $this->auto_discount;
+        if (!$this->tanggal_masuk) {
+            return 0;
+        }
+        
+        return Carbon::parse($this->tanggal_masuk)->diffInDays(now());
     }
 
-    /**
-     * Calculate final price after all discounts
-     */
-    public function getFinalPriceAttribute()
+    // ⭐ Scope: Barang yang eligible untuk FSN (umur >= 30 hari)
+    public function scopeEligibleForFsn($query)
     {
-        $totalDiscount = $this->total_discount;
-        $discountAmount = $this->harga_jual * ($totalDiscount / 100);
-        return $this->harga_jual - $discountAmount;
+        return $query->whereNotNull('tanggal_masuk')
+                     ->whereRaw('DATEDIFF(NOW(), tanggal_masuk) >= 30');
     }
 
+    // ⭐ Scope: Fast Moving
+    public function scopeFastMoving($query)
+    {
+        return $query->where('FSN', 'F');
+    }
+
+    // ⭐ Scope: Slow Moving
+    public function scopeSlowMoving($query)
+    {
+        return $query->where('FSN', 'S');
+    }
+
+    // ⭐ Scope: Non Moving
+    public function scopeNonMoving($query)
+    {
+        return $query->where('FSN', 'N');
+    }
+
+    // ⭐ Scope: Not Analyzed
+    public function scopeNotAnalyzed($query)
+    {
+        return $query->where('FSN', 'NA');
+    }
+
+    // Relationships
     public function kategori()
     {
         return $this->belongsTo(Category::class, 'id_kategori', 'id_kategori');

@@ -32,24 +32,19 @@ class DashboardController extends Controller
         
         // Transaksi Hari Ini
         $transaksiHariIni = Sale::whereDate('tanggal_transaksi', $today)->count();
-        Log::info('Transaksi Hari Ini: ' . $transaksiHariIni);
-        
         // Penjualan Hari Ini (Total Rupiah)
         $penjualanHariIni = Sale::whereDate('tanggal_transaksi', $today)
             ->sum('total_belanja') ?? 0;
-        Log::info('Penjualan Hari Ini: ' . $penjualanHariIni);
-        
+
         // Keuntungan Hari Ini (Penjualan - Modal)
         $keuntunganHariIni = $this->hitungKeuntunganHariIni($today);
-        Log::info('Keuntungan Hari Ini: ' . $keuntunganHariIni);
-        
+
         // Total Barang yang Didiskon Hari Ini
         $barangDiskonHariIni = SaleDetail::whereHas('sale', function($query) use ($today) {
                 $query->whereDate('tanggal_transaksi', $today);
             })
             ->where('diskon', '>', 0)
             ->sum('jumlah') ?? 0;
-        Log::info('Barang Diskon Hari Ini: ' . $barangDiskonHariIni);
 
         // ========================================
         // DATA GRAFIK PENJUALAN (7 HARI TERAKHIR)
@@ -69,7 +64,7 @@ class DashboardController extends Controller
             
             $salesData[] = (float) $totalSales;
             
-            Log::info("Sales data for {$date->toDateString()}: " . $totalSales);
+
         }
 
         // ========================================
@@ -92,7 +87,7 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        Log::info('=== END DASHBOARD DEBUG ===');
+
 
         return view('dashboard', compact(
             'transaksiHariIni',

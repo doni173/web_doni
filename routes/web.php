@@ -36,9 +36,9 @@ Route::prefix('items')->group(function () {
     Route::delete('/{id}', [ItemController::class, 'destroy'])
         ->name('items.destroy');
 
-    // 🔑 AKTIFKAN FSN (INI YANG ERROR TADI)
-    Route::post('/{id}/activate-fsn', [ItemController::class, 'activateFSN'])
-        ->name('items.activate.fsn');
+    // ❌ PERBAIKAN: Hapus route activateFSN yang tidak diimplementasi
+    // Route::post('/{id}/activate-fsn', [ItemController::class, 'activateFSN'])
+    //     ->name('items.activate.fsn');
 
     // hitung fsn
     Route::post('/calculate-fsn', [ItemController::class, 'calculateFSN'])
