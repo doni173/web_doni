@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
 </head>
 <body>
     @include('layouts.navbar')
@@ -84,7 +85,9 @@
                                 <span class="id-badge">{{ $sale->id_penjualan }}</span>
                             </td>
                             <td data-label="Tanggal">{{ \Carbon\Carbon::parse($sale->tanggal_transaksi)->format('d/m/Y H:i') }}</td>
-                            <td data-label="Kasir">{{ $sale->id_user }}</td>
+                            <td data-label="Kasir">
+                                <span class="product-name">{{ $sale->user->name ?? $sale->id_user }}</span>
+                            </td>
                             <td data-label="Customer">
                                 <span class="product-name">{{ $sale->customer->nama_pelanggan ?? '-' }}</span>
                             </td>
@@ -97,9 +100,20 @@
                             </td>
                             <td data-label="Aksi">
                                 <div class="action-buttons">
+                                    {{-- Tombol Lihat Detail (untuk semua role) --}}
                                     <a href="{{ route('sale.show', $sale->id_penjualan) }}" class="btn-info" title="Lihat Detail">
                                         <i class="fas fa-eye"></i>
                                     </a>
+                                    {{-- Tombol Hapus (HANYA untuk Admin) --}}
+                                    @if(Auth::check() && Auth::user()->role === 'admin')
+                                    <form action="{{ route('sale.destroy', $sale->id_penjualan) }}" method="POST" style="display: inline-block;" onsubmit="return confirmDelete(event)">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn-danger" title="Hapus Transaksi">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -108,7 +122,7 @@
                             <td colspan="8" class="text-center">
                                 <div class="empty-state">
                                     <i class="bi bi-inbox"></i>
-                                    <p>Tidak ada transaksi penjualan</p>
+                                    <p>Tidak ada transaksi penjualan ditemukan</p>
                                 </div>
                             </td>
                         </tr>
@@ -118,9 +132,9 @@
             </div>
 
             <!-- Pagination -->
-            @if(isset($sales) && $sales instanceof \Illuminate\Pagination\LengthAwarePaginator)
+            @if(isset($sales) && $sales instanceof \Illuminate\Pagination\LengthAwarePaginator && $sales->hasPages())
             <div class="pagination-wrapper">
-                {{ $sales->links() }}
+                {{ $sales->appends(request()->query())->links() }}
             </div>
             @endif
         </div>
@@ -138,6 +152,18 @@
     </script>
     @endif
 
+    @if (session('error'))
+    <script>
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal',
+            text: '{{ session('error') }}',
+            timer: 2000,
+            showConfirmButton: false
+        })
+    </script>
+    @endif
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -145,6 +171,35 @@
         function toggleSidebar() {
             document.querySelector('.sidebar').classList.toggle('open');
             document.querySelector('.sidebar-overlay').classList.toggle('active');
+        }
+
+        // Function untuk print receipt
+        function printReceipt(idPenjualan) {
+            // Buka halaman print dalam window baru
+            const printUrl = '{{ route("sale.print", ":id") }}'.replace(':id', idPenjualan);
+            window.open(printUrl, '_blank', 'width=800,height=600');
+        }
+
+        // Function untuk konfirmasi delete
+        function confirmDelete(event) {
+            event.preventDefault();
+            
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Data transaksi ini akan dihapus permanen dan stok akan dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    event.target.submit();
+                }
+            });
+            
+            return false;
         }
 
         $(document).ready(function() {
@@ -158,17 +213,15 @@
             const tableBody = $('#saleTableBody');
             const filterButton = $('#filterButton');
 
-            // Live Search
+            // Live Search dengan debounce
             searchInput.on('input', function() {
                 const query = $(this).val().trim();
                 clearTimeout(searchTimeout);
 
-                if (query.length > 0 || dateFilter.val()) {
-                    clearButton.show();
-                } else {
-                    clearButton.hide();
-                }
+                // Toggle clear button visibility
+                toggleClearButton();
 
+                // Debounce search
                 searchTimeout = setTimeout(function() {
                     performSearch(query, dateFilter.val());
                 }, 500);
@@ -177,9 +230,7 @@
             // Date Filter Change
             dateFilter.on('change', function() {
                 const date = $(this).val();
-                if (date || searchInput.val().trim()) {
-                    clearButton.show();
-                }
+                toggleClearButton();
                 performSearch(searchInput.val().trim(), date);
             });
 
@@ -188,16 +239,29 @@
                 performSearch(searchInput.val().trim(), dateFilter.val());
             });
 
-            // Clear Button
+            // Clear Button Click
             clearButton.on('click', function() {
                 searchInput.val('');
                 dateFilter.val('');
                 clearButton.hide();
                 searchInfo.hide();
-                performSearch('', '');
+                
+                // Redirect ke halaman tanpa parameter
+                window.location.href = '{{ route("sale.history") }}';
             });
 
+            // Toggle Clear Button
+            function toggleClearButton() {
+                if (searchInput.val().trim() || dateFilter.val()) {
+                    clearButton.show();
+                } else {
+                    clearButton.hide();
+                }
+            }
+
+            // Perform Search Function
             function performSearch(query, date) {
+                // Show loading indicator
                 searchIcon.hide();
                 searchLoading.show();
                 tableBody.addClass('table-loading');
@@ -210,59 +274,106 @@
                         tanggal: date
                     },
                     success: function(response) {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(response, 'text/html');
-                        const newTableBody = doc.querySelector('#saleTableBody');
-                        
-                        if (newTableBody) {
-                            tableBody.html(newTableBody.innerHTML);
-                        }
-
-                        // Update search info
-                        if (query || date) {
-                            let infoText = '';
-                            if (query) {
-                                infoText += 'Hasil pencarian: <strong>' + query + '</strong>';
+                        try {
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(response, 'text/html');
+                            const newTableBody = doc.querySelector('#saleTableBody');
+                            
+                            if (newTableBody) {
+                                tableBody.html(newTableBody.innerHTML);
+                            } else {
+                                console.error('Table body not found in response');
                             }
-                            if (date) {
-                                if (query) infoText += ' | ';
-                                const formattedDate = new Date(date).toLocaleDateString('id-ID', {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: 'numeric'
-                                });
-                                infoText += 'Tanggal: <strong>' + formattedDate + '</strong>';
-                            }
-                            searchInfo.html(infoText);
-                            searchInfo.show();
-                        } else {
-                            searchInfo.hide();
-                        }
 
-                        searchLoading.hide();
-                        searchIcon.show();
-                        tableBody.removeClass('table-loading');
+                            // Update search info
+                            updateSearchInfo(query, date);
+
+                        } catch (error) {
+                            console.error('Parse error:', error);
+                            showErrorAlert();
+                        } finally {
+                            // Hide loading indicator
+                            searchLoading.hide();
+                            searchIcon.show();
+                            tableBody.removeClass('table-loading');
+                        }
                     },
                     error: function(xhr, status, error) {
                         console.error('Search error:', error);
                         searchLoading.hide();
                         searchIcon.show();
                         tableBody.removeClass('table-loading');
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Oops...',
-                            text: 'Terjadi kesalahan saat mencari data!',
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
+                        showErrorAlert();
                     }
                 });
             }
 
-            // Prevent form submission
+            // Update Search Info
+            function updateSearchInfo(query, date) {
+                if (query || date) {
+                    let infoText = '';
+                    
+                    if (query) {
+                        infoText += 'Hasil pencarian: <strong>' + escapeHtml(query) + '</strong>';
+                    }
+                    
+                    if (date) {
+                        if (query) infoText += ' | ';
+                        try {
+                            const formattedDate = new Date(date).toLocaleDateString('id-ID', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                            });
+                            infoText += 'Tanggal: <strong>' + formattedDate + '</strong>';
+                        } catch (e) {
+                            infoText += 'Tanggal: <strong>' + date + '</strong>';
+                        }
+                    }
+                    
+                    searchInfo.html(infoText);
+                    searchInfo.show();
+                } else {
+                    searchInfo.hide();
+                }
+            }
+
+            // Escape HTML to prevent XSS
+            function escapeHtml(text) {
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+            }
+
+            // Show Error Alert
+            function showErrorAlert() {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'Terjadi kesalahan saat mencari data!',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+
+            // Prevent form submission on Enter key
             $('#searchForm').on('submit', function(e) {
                 e.preventDefault();
+                performSearch(searchInput.val().trim(), dateFilter.val());
                 return false;
+            });
+
+            // Handle Enter key on search input
+            searchInput.on('keypress', function(e) {
+                if (e.which === 13) { // Enter key
+                    e.preventDefault();
+                    performSearch($(this).val().trim(), dateFilter.val());
+                }
             });
         });
     </script>

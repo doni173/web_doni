@@ -45,9 +45,21 @@ class SaleController extends Controller
      */
     public function history(Request $request)
     {
+        $q = $request->query('q');
         $tanggal = $request->query('tanggal');
 
-        $sales = Sale::with('customer')
+        $sales = Sale::with(['customer', 'user'])
+                    ->when($q, function ($query) use ($q) {
+                        return $query->where(function($subQuery) use ($q) {
+                            $subQuery->where('id_penjualan', 'like', "%{$q}%")
+                                     ->orWhereHas('customer', function($customerQuery) use ($q) {
+                                         $customerQuery->where('nama_pelanggan', 'like', "%{$q}%");
+                                     })
+                                     ->orWhereHas('user', function($userQuery) use ($q) {
+                                         $userQuery->where('name', 'like', "%{$q}%");
+                                     });
+                        });
+                    })
                     ->when($tanggal, function ($query) use ($tanggal) {
                         return $query->whereDate('tanggal_transaksi', $tanggal);
                     })
@@ -63,7 +75,7 @@ class SaleController extends Controller
      */
     public function show($id)
     {
-        $sale = Sale::with(['customer', 'saleDetails.produk', 'saleDetails.service'])
+        $sale = Sale::with(['customer', 'user', 'saleDetails.produk', 'saleDetails.service'])
                     ->findOrFail($id);
 
         return view('sale_detail_history', compact('sale'));
@@ -280,6 +292,82 @@ class SaleController extends Controller
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Hapus transaksi penjualan
+     */
+    public function destroy($id)
+    {
+        try {
+            DB::beginTransaction();
+            
+            // Cari transaksi
+            $sale = Sale::findOrFail($id);
+            
+            // Kembalikan stok barang yang terjual
+            $saleDetails = SaleDetail::where('id_penjualan', $id)->get();
+            
+            foreach ($saleDetails as $detail) {
+                // Hanya kembalikan stok untuk produk, bukan service
+                if ($detail->id_produk) {
+                    $item = Item::find($detail->id_produk);
+                    if ($item) {
+                        // Kembalikan stok
+                        $stokLama = $item->stok;
+                        $item->stok += $detail->jumlah;
+                        $item->save();
+                        
+                        Log::info("Stok dikembalikan: {$item->nama_produk} - Stok Lama: {$stokLama}, Dikembalikan: {$detail->jumlah}, Stok Baru: {$item->stok}");
+                    }
+                }
+            }
+            
+            // Hapus detail penjualan
+            SaleDetail::where('id_penjualan', $id)->delete();
+            
+            // Hapus customer jika hanya punya 1 transaksi
+            $customer = Customer::find($sale->id_pelanggan);
+            if ($customer) {
+                $customerSalesCount = Sale::where('id_pelanggan', $customer->id_pelanggan)->count();
+                if ($customerSalesCount <= 1) {
+                    $customer->delete();
+                    Log::info("Customer dihapus: {$customer->nama_pelanggan}");
+                }
+            }
+            
+            // Hapus transaksi penjualan
+            $sale->delete();
+            
+            DB::commit();
+            
+            Log::info("Transaksi berhasil dihapus: ID {$id}");
+            
+            return redirect()->route('sale.history')->with('success', 'Transaksi berhasil dihapus dan stok dikembalikan!');
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error deleting sale: ' . $e->getMessage());
+            
+            return redirect()->route('sale.history')->with('error', 'Gagal menghapus transaksi: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Cetak struk penjualan
+     */
+    public function print($id)
+    {
+        try {
+            $sale = Sale::with(['customer', 'user', 'saleDetails.produk', 'saleDetails.service'])
+                        ->findOrFail($id);
+            
+            return view('sale_print', compact('sale'));
+            
+        } catch (\Exception $e) {
+            Log::error('Error printing sale: ' . $e->getMessage());
+            return redirect()->route('sale.history')->with('error', 'Gagal mencetak struk: ' . $e->getMessage());
         }
     }
 }

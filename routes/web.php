@@ -17,35 +17,6 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\ReportController;
 
-
-Route::prefix('items')->group(function () {
-
-    // halaman utama item
-    Route::get('/', [ItemController::class, 'index'])
-        ->name('items.index');
-
-    // simpan item
-    Route::post('/', [ItemController::class, 'store'])
-        ->name('items.store');
-
-    // update item
-    Route::put('/{id}', [ItemController::class, 'update'])
-        ->name('items.update');
-
-    // hapus item
-    Route::delete('/{id}', [ItemController::class, 'destroy'])
-        ->name('items.destroy');
-
-    // ❌ PERBAIKAN: Hapus route activateFSN yang tidak diimplementasi
-    // Route::post('/{id}/activate-fsn', [ItemController::class, 'activateFSN'])
-    //     ->name('items.activate.fsn');
-
-    // hitung fsn
-    Route::post('/calculate-fsn', [ItemController::class, 'calculateFSN'])
-        ->name('items.calculate.fsn');
-
-});
-
 // ========================================
 // AUTHENTICATION ROUTES
 // ========================================
@@ -61,7 +32,7 @@ Route::middleware('auth')->group(function () {
         ->middleware('role:admin')
         ->name('dashboard');
     
-    Route::get('/dashboard_kasir', [DashboardController::class, 'kasirDashboard'])
+    Route::get('/dashboard-kasir', [DashboardController::class, 'kasirDashboard'])
         ->middleware('role:kasir')
         ->name('dashboard_kasir');
 });
@@ -71,18 +42,38 @@ Route::middleware('auth')->group(function () {
 // ========================================
 Route::middleware('auth')->group(function () {
     Route::resource('categories', CategoryController::class);
-    Route::resource('items', ItemController::class);
     Route::resource('brands', BrandController::class);
     Route::resource('services', ServiceController::class);
     Route::resource('suppliers', SupplierController::class);
 });
 
 // ========================================
+// ITEMS ROUTES
+// ========================================
+Route::prefix('items')->middleware('auth')->group(function () {
+    // halaman utama item
+    Route::get('/', [ItemController::class, 'index'])->name('items.index');
+    
+    // simpan item
+    Route::post('/', [ItemController::class, 'store'])->name('items.store');
+    
+    // update item
+    Route::put('/{id}', [ItemController::class, 'update'])->name('items.update');
+    
+    // hapus item
+    Route::delete('/{id}', [ItemController::class, 'destroy'])->name('items.destroy');
+    
+    // hitung fsn
+    Route::post('/calculate-fsn', [ItemController::class, 'calculateFSN'])->name('items.calculate.fsn');
+    
+    // hitung fsn single
+    Route::get('/{id}/calculate-fsn', [ItemController::class, 'calculateSingleFSN'])->name('items.calculate.single.fsn');
+});
+
+// ========================================
 // FSN ANALYSIS ROUTES
 // ========================================
 Route::middleware('auth')->group(function () {
-    Route::post('/items/calculate-fsn', [ItemController::class, 'calculateFSN'])->name('items.calculate.fsn');
-    Route::get('/items/{id}/calculate-fsn', [ItemController::class, 'calculateSingleFSN'])->name('items.calculate.single.fsn');
     Route::get('/fsn-report', [ItemController::class, 'fsnReport'])->name('fsn.report');
 });
 
@@ -116,24 +107,30 @@ Route::middleware('auth')->group(function () {
 });
 
 // ========================================
-// SALES ROUTES (FIXED - Mengikuti Konvensi RESTful)
+// SALES ROUTES
 // ========================================
 Route::prefix('sale')->middleware('auth')->group(function () {
     // Halaman form transaksi penjualan
     Route::get('/', [SaleController::class, 'index'])->name('sale.index');
     
-    // Proses simpan transaksi (POST langsung ke /sale, bukan /sale/store)
+    // Proses simpan transaksi
     Route::post('/', [SaleController::class, 'store'])->name('sale.store');
     
     // History penjualan
     Route::get('/history', [SaleController::class, 'history'])->name('sale.history');
     
-    // Detail penjualan (harus di bawah /history agar tidak conflict)
+    // Cetak struk (HARUS sebelum {id} agar tidak conflict)
+    Route::get('/print/{id}', [SaleController::class, 'print'])->name('sale.print');
+    
+    // Detail penjualan
     Route::get('/{id}', [SaleController::class, 'show'])->name('sale.show');
+    
+    // Hapus transaksi
+    Route::delete('/{id}', [SaleController::class, 'destroy'])->name('sale.destroy');
 });
 
 // ========================================
-// PURCHASE ROUTES (FIXED - Konsisten dengan Sales)
+// PURCHASE ROUTES
 // ========================================
 Route::prefix('purchase')->middleware('auth')->group(function () {
     // Halaman form pembelian
