@@ -77,7 +77,7 @@ class Item extends Model
         return $query->where('FSN', 'N');
     }
 
-    // ⭐ Scope: Not Analyzed
+
     public function scopeNotAnalyzed($query)
     {
         return $query->where('FSN', 'NA');
