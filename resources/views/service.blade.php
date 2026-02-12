@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -10,6 +10,106 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        /* Pagination Styles */
+        .pagination-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 15px 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .pagination-info {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .pagination-btn {
+            padding: 8px 12px;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            color: #374151;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            min-width: 36px;
+            text-align: center;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .pagination-btn i {
+            font-size: 12px;
+        }
+
+        .page-size-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-size-selector label {
+            font-size: 14px;
+            color: #6b7280;
+            margin: 0;
+        }
+
+        .page-size-selector select {
+            padding: 6px 30px 6px 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            background: #fff;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+        }
+
+        .pagination-ellipsis {
+            padding: 8px 12px;
+            color: #9ca3af;
+        }
+
+        @media (max-width: 768px) {
+            .pagination-wrapper {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .pagination-controls {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+    </style>
 </head>
 <body>
 
@@ -118,6 +218,39 @@
 
 </tbody>
 </table>
+</div>
+
+<!-- ================= PAGINATION SECTION ================= -->
+<div class="pagination-wrapper">
+    <div class="page-size-selector">
+        <label for="pageSize">Tampilkan:</label>
+        <select id="pageSize">
+            <option value="10">10 baris</option>
+            <option value="20" selected>20 baris</option>
+            <option value="50">50 baris</option>
+            <option value="100">100 baris</option>
+        </select>
+    </div>
+
+    <div class="pagination-info">
+        Menampilkan <strong id="showingStart">1</strong> - <strong id="showingEnd">20</strong> dari <strong id="totalItems">0</strong> data
+    </div>
+
+    <div class="pagination-controls" id="paginationControls">
+        <button class="pagination-btn" id="firstPage" title="Halaman Pertama">
+            <i class="fas fa-angle-double-left"></i>
+        </button>
+        <button class="pagination-btn" id="prevPage" title="Sebelumnya">
+            <i class="fas fa-angle-left"></i>
+        </button>
+        <div id="pageNumbers"></div>
+        <button class="pagination-btn" id="nextPage" title="Selanjutnya">
+            <i class="fas fa-angle-right"></i>
+        </button>
+        <button class="pagination-btn" id="lastPage" title="Halaman Terakhir">
+            <i class="fas fa-angle-double-right"></i>
+        </button>
+    </div>
 </div>
 
 </div>
@@ -278,8 +411,11 @@ function confirmDelete(id) {
     });
 }
 
-// ================= LIVE SEARCH FUNCTIONALITY ================= 
 $(document).ready(function() {
+
+    // ====================================
+    // LIVE SEARCH FUNCTIONALITY
+    // ====================================
     let searchTimeout;
     const searchInput = $('#searchInput');
     const searchLoading = $('#searchLoading');
@@ -289,7 +425,6 @@ $(document).ready(function() {
     const searchTerm = $('#searchTerm');
     const tableBody = $('#serviceTableBody');
 
-    // Live search saat user mengetik
     searchInput.on('input', function() {
         const query = $(this).val().trim();
         clearTimeout(searchTimeout);
@@ -301,13 +436,11 @@ $(document).ready(function() {
             searchInfo.hide();
         }
 
-        // Delay 300ms sebelum search untuk mengurangi request
         searchTimeout = setTimeout(function() {
             performSearch(query);
         }, 300);
     });
 
-    // Clear button click
     clearButton.on('click', function() {
         searchInput.val('');
         clearButton.hide();
@@ -315,7 +448,6 @@ $(document).ready(function() {
         performSearch('');
     });
 
-    // Fungsi untuk melakukan search via AJAX
     function performSearch(query) {
         searchIcon.hide();
         searchLoading.show();
@@ -325,16 +457,16 @@ $(document).ready(function() {
             type: 'GET',
             data: { q: query },
             success: function(response) {
-                // Parse HTML response
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(response, 'text/html');
                 const newTableBody = doc.querySelector('#serviceTableBody');
-                
+
                 if (newTableBody) {
                     tableBody.html(newTableBody.innerHTML);
+                    // Reinitialize pagination after search
+                    initPagination();
                 }
 
-                // Tampilkan search info jika ada query
                 if (query.length > 0) {
                     searchTerm.text(query);
                     searchInfo.show();
@@ -360,31 +492,170 @@ $(document).ready(function() {
         });
     }
 
-    // Prevent form submit
     $('#searchForm').on('submit', function(e) {
         e.preventDefault();
         return false;
     });
 
-    // ================= FORMAT RUPIAH ================= 
+    // ====================================
+    // PAGINATION FUNCTIONALITY
+    // ====================================
+    let currentPage = 1;
+    let itemsPerPage = 20;
+    let allRows = [];
+
+    function initPagination() {
+        // Get all table rows
+        allRows = Array.from(document.querySelectorAll('#serviceTableBody tr'));
+
+        // Update total items
+        document.getElementById('totalItems').textContent = allRows.length;
+
+        // Reset to first page
+        currentPage = 1;
+
+        // Render pagination
+        renderPagination();
+    }
+
+    function renderPagination() {
+        const totalPages = Math.ceil(allRows.length / itemsPerPage);
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+
+        // Hide all rows
+        allRows.forEach(row => row.style.display = 'none');
+
+        // Show only current page rows
+        const visibleRows = allRows.slice(start, end);
+        visibleRows.forEach(row => row.style.display = '');
+
+        // Update showing info
+        const actualStart = allRows.length > 0 ? start + 1 : 0;
+        const actualEnd = Math.min(end, allRows.length);
+        document.getElementById('showingStart').textContent = actualStart;
+        document.getElementById('showingEnd').textContent = actualEnd;
+
+        // Update buttons state
+        document.getElementById('firstPage').disabled = currentPage === 1;
+        document.getElementById('prevPage').disabled = currentPage === 1;
+        document.getElementById('nextPage').disabled = currentPage === totalPages || totalPages === 0;
+        document.getElementById('lastPage').disabled = currentPage === totalPages || totalPages === 0;
+
+        // Render page numbers
+        renderPageNumbers(totalPages);
+    }
+
+    function renderPageNumbers(totalPages) {
+        const pageNumbersContainer = document.getElementById('pageNumbers');
+        pageNumbersContainer.innerHTML = '';
+
+        if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) {
+                pageNumbersContainer.appendChild(createPageButton(i));
+            }
+        } else {
+            pageNumbersContainer.appendChild(createPageButton(1));
+
+            if (currentPage > 3) {
+                pageNumbersContainer.appendChild(createEllipsis());
+            }
+
+            const startPage = Math.max(2, currentPage - 1);
+            const endPage = Math.min(totalPages - 1, currentPage + 1);
+
+            for (let i = startPage; i <= endPage; i++) {
+                pageNumbersContainer.appendChild(createPageButton(i));
+            }
+
+            if (currentPage < totalPages - 2) {
+                pageNumbersContainer.appendChild(createEllipsis());
+            }
+
+            if (totalPages > 1) {
+                pageNumbersContainer.appendChild(createPageButton(totalPages));
+            }
+        }
+    }
+
+    function createPageButton(pageNum) {
+        const button = document.createElement('button');
+        button.className = 'pagination-btn' + (pageNum === currentPage ? ' active' : '');
+        button.textContent = pageNum;
+        button.addEventListener('click', () => {
+            currentPage = pageNum;
+            renderPagination();
+        });
+        return button;
+    }
+
+    function createEllipsis() {
+        const span = document.createElement('span');
+        span.className = 'pagination-ellipsis';
+        span.textContent = '...';
+        return span;
+    }
+
+    // Navigation button listeners
+    document.getElementById('firstPage').addEventListener('click', () => {
+        currentPage = 1;
+        renderPagination();
+    });
+
+    document.getElementById('prevPage').addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            renderPagination();
+        }
+    });
+
+    document.getElementById('nextPage').addEventListener('click', () => {
+        const totalPages = Math.ceil(allRows.length / itemsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            renderPagination();
+        }
+    });
+
+    document.getElementById('lastPage').addEventListener('click', () => {
+        const totalPages = Math.ceil(allRows.length / itemsPerPage);
+        currentPage = totalPages;
+        renderPagination();
+    });
+
+    // Page size change
+    document.getElementById('pageSize').addEventListener('change', function() {
+        itemsPerPage = parseInt(this.value);
+        currentPage = 1;
+        renderPagination();
+    });
+
+    // Initialize pagination on page load
+    initPagination();
+
+    // ====================================
+    // FORMAT RUPIAH
+    // ====================================
     $(document).on('input', '.rupiah', function() {
         let val = $(this).val().replace(/[^0-9]/g, '');
         $(this).val(val.replace(/\B(?=(\d{3})+(?!\d))/g, '.'));
     });
 
-    // Remove formatting sebelum submit
     $('form').on('submit', function() {
         $(this).find('.rupiah').each(function() {
             $(this).val($(this).val().replace(/\./g, ''));
         });
     });
 
-    // ================= DISKON INTEGER ================= 
+    // ====================================
+    // DISKON INTEGER
+    // ====================================
     $(document).on('input', '.diskon', function() {
         let val = $(this).val().replace(/[^0-9]/g, '');
         if (parseInt(val) > 100) val = 100;
         $(this).val(val);
     });
+
 });
 </script>
 
