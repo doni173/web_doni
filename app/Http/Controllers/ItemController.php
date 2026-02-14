@@ -95,7 +95,6 @@ class ItemController extends Controller
                 'stok' => 'required|numeric|min:0',
                 'satuan' => 'required|string|max:30',
                 'modal' => 'required|numeric|min:0',
-                'diskon' => 'required|numeric|min:0|max:100',
             ]);
 
             $idProduk = $this->generateProductId();
@@ -164,8 +163,6 @@ class ItemController extends Controller
                 'stok' => 'required|numeric|min:0',
                 'satuan' => 'required|string|max:30',
                 'modal' => 'required|numeric|min:0',
-                // ❌ PERBAIKAN: Hapus validasi diskon karena tidak digunakan (diskon diatur otomatis oleh FSN)
-                // 'diskon' => 'required|numeric|min:0|max:100',
             ]);
 
             $item = Item::findOrFail($id);

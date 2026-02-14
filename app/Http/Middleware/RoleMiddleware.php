@@ -8,17 +8,25 @@ use Illuminate\Support\Facades\Auth;
 
 class RoleMiddleware
 {
-    public function handle(Request $request, Closure $next, $role)
+    public function handle(Request $request, Closure $next, ...$roles)
     {
-        // Ambil peran pengguna yang sedang login
         $userRole = Auth::user()->role;
-        
-        // Log informasi untuk memeriksa peran yang dimiliki pengguna
-        \Log::info('User role: ' . $userRole . ', Expected role: ' . $role);
 
-        // Cek apakah peran pengguna sesuai dengan yang diminta
-        if ($userRole !== $role) {
-            return redirect('/');  // Jika tidak sesuai, arahkan ke halaman utama
+        // Support multi-role: 'admin,kasir'
+        $allowedRoles = [];
+        foreach ($roles as $role) {
+            foreach (explode(',', $role) as $r) {
+                $allowedRoles[] = trim($r);
+            }
+        }
+
+        \Log::info('User role: ' . $userRole . ', Allowed roles: ' . implode(',', $allowedRoles));
+
+        if (!in_array($userRole, $allowedRoles)) {
+            if ($userRole === 'kasir') {
+                return redirect()->route('dashboard_kasir');
+            }
+            return redirect()->route('dashboard');
         }
 
         return $next($request);

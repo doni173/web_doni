@@ -10,10 +10,10 @@ class Item extends Model
 {
     use HasFactory;
 
-    protected $table = 'items';
+    protected $table      = 'items';
     protected $primaryKey = 'id_produk';
-    public $incrementing = false;
-    protected $keyType = 'string';
+    public    $incrementing = false;
+    protected $keyType    = 'string';
 
     protected $fillable = [
         'id_produk',
@@ -31,59 +31,74 @@ class Item extends Model
         'FSN',
         'tor_value',
         'last_fsn_calculation',
-        'consecutive_n_months', // ⭐ BARU
+        'consecutive_n_months',
     ];
 
     protected $casts = [
-        'tanggal_masuk' => 'date',
+        'tanggal_masuk'        => 'date',
         'last_fsn_calculation' => 'datetime',
-        'tor_value' => 'decimal:2',
-        'diskon' => 'decimal:2',
+        'tor_value'            => 'decimal:2',
+        'diskon'               => 'decimal:2',
         'harga_setelah_diskon' => 'decimal:2',
     ];
 
-    // ⭐ Accessor untuk umur barang (dalam hari)
-    public function getUmurHariAttribute()
+    // ============================================================
+    // ACCESSORS
+    // ============================================================
+
+    /**
+     * Umur barang dalam hari sejak tanggal masuk.
+     */
+    public function getUmurHariAttribute(): int
     {
         if (!$this->tanggal_masuk) {
             return 0;
         }
-        
+
         return Carbon::parse($this->tanggal_masuk)->diffInDays(now());
     }
 
-    // ⭐ Scope: Barang yang eligible untuk FSN (umur >= 30 hari)
+    // ============================================================
+    // SCOPES
+    // ============================================================
+
+    /**
+     * Barang yang eligible untuk analisis FSN (umur >= 30 hari).
+     */
     public function scopeEligibleForFsn($query)
     {
         return $query->whereNotNull('tanggal_masuk')
                      ->whereRaw('DATEDIFF(NOW(), tanggal_masuk) >= 30');
     }
 
-    // ⭐ Scope: Fast Moving
+    /** Barang Fast Moving. */
     public function scopeFastMoving($query)
     {
         return $query->where('FSN', 'F');
     }
 
-    // ⭐ Scope: Slow Moving
+    /** Barang Slow Moving. */
     public function scopeSlowMoving($query)
     {
         return $query->where('FSN', 'S');
     }
 
-    // ⭐ Scope: Non Moving
+    /** Barang Non Moving. */
     public function scopeNonMoving($query)
     {
         return $query->where('FSN', 'N');
     }
 
-
+    /** Barang yang belum dianalisis (NA). */
     public function scopeNotAnalyzed($query)
     {
         return $query->where('FSN', 'NA');
     }
 
-    // Relationships
+    // ============================================================
+    // RELATIONSHIPS
+    // ============================================================
+
     public function kategori()
     {
         return $this->belongsTo(Category::class, 'id_kategori', 'id_kategori');

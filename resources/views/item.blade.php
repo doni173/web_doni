@@ -9,8 +9,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
-        /* Pagination Styles */
+        /* ============================================================
+           PAGINATION STYLES
+        ============================================================ */
         .pagination-wrapper {
             display: flex;
             justify-content: space-between;
@@ -19,7 +22,7 @@
             padding: 15px 20px;
             background: #fff;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         .pagination-info {
@@ -66,6 +69,14 @@
             font-size: 12px;
         }
 
+        .pagination-ellipsis {
+            padding: 8px 12px;
+            color: #9ca3af;
+        }
+
+        /* ============================================================
+           PAGE SIZE SELECTOR
+        ============================================================ */
         .page-size-selector {
             display: flex;
             align-items: center;
@@ -91,11 +102,9 @@
             background-position: right 8px center;
         }
 
-        .pagination-ellipsis {
-            padding: 8px 12px;
-            color: #9ca3af;
-        }
-
+        /* ============================================================
+           RESPONSIVE
+        ============================================================ */
         @media (max-width: 768px) {
             .pagination-wrapper {
                 flex-direction: column;
@@ -111,60 +120,70 @@
 </head>
 
 <body>
-    <!-- Navigation & Sidebar -->
+
+    {{-- ============================================================
+         LAYOUT: NAVIGATION & SIDEBAR
+    ============================================================ --}}
     @include('layouts.navbar')
     @include('layouts.sidebar')
     <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-    <!-- Main Content -->
+    {{-- ============================================================
+         MAIN CONTENT
+    ============================================================ --}}
     <div class="main-container">
         <div class="main-content">
             <h2>Data Barang</h2>
+
+            {{-- Search & Action Buttons --}}
             <div class="buttons">
                 <form action="{{ route('items.index') }}" method="GET" class="search-form" id="searchForm">
-                    <!-- Search Input -->
+
+                    {{-- Search Input --}}
                     <div class="search-input-wrapper">
-                        <input 
-                            type="text" 
-                            class="form-control" 
-                            placeholder="Cari barang..." 
-                            name="q" 
-                            value="{{ request('q') }}" 
-                            id="searchInput" 
+                        <input
+                            type="text"
+                            class="form-control"
+                            placeholder="Cari barang..."
+                            name="q"
+                            value="{{ request('q') }}"
+                            id="searchInput"
                             autocomplete="off">
                         <span class="search-icon">
                             <i class="bi bi-arrow-clockwise spin" id="searchLoading" style="display: none;"></i>
                         </span>
                     </div>
 
-                    <!-- Clear Search Button -->
-                    <button 
-                        type="button" 
-                        class="btn-clear" 
-                        id="clearSearch" 
+                    {{-- Clear Search --}}
+                    <button
+                        type="button"
+                        class="btn-clear"
+                        id="clearSearch"
                         style="{{ request('q') ? '' : 'display: none;' }}">
                         <i class="bi bi-x-circle"></i>
                         <span>Clear</span>
                     </button>
 
-                    <!-- Add Item Button -->
-                    <button 
-                        type="button" 
-                        class="btn-add" 
-                        data-toggle="modal" 
+                    {{-- Tambah Data --}}
+                    <button
+                        type="button"
+                        class="btn-add"
+                        data-toggle="modal"
                         data-target="#addItemModal">
                         <i class="bi bi-plus-circle"></i>
                         <span>Tambah Data</span>
                     </button>
                 </form>
 
-                <!-- Search Info -->
+                {{-- Search Info --}}
                 <div class="search-info" id="searchInfo" style="display: none;">
                     Menampilkan hasil pencarian untuk: <strong id="searchTerm"></strong>
                 </div>
             </div>
 
-            <!-- Items Table -->
+            {{-- ============================================================
+                 TABLE: DATA BARANG
+            ============================================================ --}}
             <div class="table-responsive">
                 <table class="table-main">
                     <thead>
@@ -175,7 +194,7 @@
                             <th>Brand</th>
                             <th>Supplier</th>
                             <th>Stok</th>
-                            <th>Satuan</th>
+                            <th>Tanggal Masuk</th> {{-- ✅ UBAH DARI "Satuan" --}}
                             <th>FSN</th>
                             <th>Harga Beli</th>
                             <th>Harga Jual</th>
@@ -199,7 +218,10 @@
                             <td data-label="Stok">
                                 <span class="stock-number">{{ $item->stok }}</span>
                             </td>
-                            <td data-label="Satuan">{{ $item->satuan }}</td>
+                            {{-- ✅ UBAH DARI SATUAN KE TANGGAL MASUK --}}
+                            <td data-label="Tanggal Masuk">
+                                {{ $item->tanggal_masuk ? $item->tanggal_masuk->format('d/m/Y') : '-' }}
+                            </td>
                             <td data-label="FSN">
                                 <div class="fsn-container">
                                     @if($item->FSN == 'NA')
@@ -209,9 +231,9 @@
                                         </span>
                                     @else
                                         <span class="status-badge fsn-badge
-                                            @if($item->FSN == 'F') status-normal 
-                                            @elseif($item->FSN == 'S') status-medium 
-                                            @elseif($item->FSN == 'N') status-high 
+                                            @if($item->FSN == 'F') status-normal
+                                            @elseif($item->FSN == 'S') status-medium
+                                            @elseif($item->FSN == 'N') status-high
                                             @endif">
                                             {{ $item->FSN }}
                                         </span>
@@ -234,25 +256,25 @@
                             <td data-label="Harga Diskon">Rp {{ number_format($item->harga_setelah_diskon, 0, ',', '.') }}</td>
                             <td data-label="Aksi">
                                 <div class="action-buttons">
-                                    <button 
-                                        type="button" 
-                                        class="btn-edit" 
-                                        data-toggle="modal" 
-                                        data-target="#editItemModal{{ $item->id_produk }}" 
+                                    <button
+                                        type="button"
+                                        class="btn-edit"
+                                        data-toggle="modal"
+                                        data-target="#editItemModal{{ $item->id_produk }}"
                                         title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button 
-                                        type="button" 
-                                        class="btn-delete" 
-                                        onclick="confirmDelete('{{ $item->id_produk }}')" 
+                                    <button
+                                        type="button"
+                                        class="btn-delete"
+                                        onclick="confirmDelete('{{ $item->id_produk }}')"
                                         title="Hapus">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
-                                    <form 
-                                        id="delete-form-{{ $item->id_produk }}" 
-                                        action="{{ route('items.destroy', $item->id_produk) }}" 
-                                        method="POST" 
+                                    <form
+                                        id="delete-form-{{ $item->id_produk }}"
+                                        action="{{ route('items.destroy', $item->id_produk) }}"
+                                        method="POST"
                                         style="display: none;">
                                         @csrf
                                         @method('DELETE')
@@ -274,7 +296,9 @@
                 </table>
             </div>
 
-            <!-- PAGINATION SECTION -->
+            {{-- ============================================================
+                 PAGINATION
+            ============================================================ --}}
             <div class="pagination-wrapper">
                 <div class="page-size-selector">
                     <label for="pageSize">Tampilkan:</label>
@@ -287,7 +311,10 @@
                 </div>
 
                 <div class="pagination-info">
-                    Menampilkan <strong id="showingStart">1</strong> - <strong id="showingEnd">20</strong> dari <strong id="totalItems">0</strong> data
+                    Menampilkan
+                    <strong id="showingStart">1</strong> -
+                    <strong id="showingEnd">20</strong>
+                    dari <strong id="totalItems">0</strong> data
                 </div>
 
                 <div class="pagination-controls" id="paginationControls">
@@ -309,9 +336,9 @@
         </div>
     </div>
 
-    <!-- ========================================
-         MODAL: ADD ITEM
-    ========================================= -->
+    {{-- ============================================================
+         MODAL: TAMBAH BARANG
+    ============================================================ --}}
     <div class="modal fade" id="addItemModal" tabindex="-1" role="dialog" aria-labelledby="addItemModalLabel" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -327,43 +354,37 @@
                     <form action="{{ route('items.store') }}" method="POST" id="addItemForm">
                         @csrf
 
-                        <!-- Nama Produk -->
+                        {{-- Nama Produk --}}
                         <div class="form-group">
-                            <label for="nama_produk">
-                                Nama Produk <span style="color: red;">*</span>
-                            </label>
-                            <input 
-                                type="text" 
-                                class="form-control" 
-                                id="nama_produk" 
-                                name="nama_produk" 
-                                placeholder="Masukkan nama produk" 
+                            <label for="nama_produk">Nama Produk <span style="color: red;">*</span></label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="nama_produk"
+                                name="nama_produk"
+                                placeholder="Masukkan nama produk"
                                 required>
                         </div>
 
-                        <!-- Tanggal Masuk -->
+                        {{-- Tanggal Masuk --}}
                         <div class="form-group">
-                            <label for="tanggal_masuk">
-                                Tanggal Masuk <span style="color: red;">*</span>
-                            </label>
-                            <input 
-                                type="date" 
-                                class="form-control date-input" 
-                                id="tanggal_masuk" 
-                                name="tanggal_masuk" 
-                                value="{{ now()->format('Y-m-d') }}" 
+                            <label for="tanggal_masuk">Tanggal Masuk <span style="color: red;">*</span></label>
+                            <input
+                                type="date"
+                                class="form-control date-input"
+                                id="tanggal_masuk"
+                                name="tanggal_masuk"
+                                value="{{ now()->format('Y-m-d') }}"
                                 required>
                             <small class="form-text text-muted">
-                                <i class="fas fa-info-circle"></i> 
+                                <i class="fas fa-info-circle"></i>
                                 Tanggal barang pertama kali masuk ke inventori (default: hari ini)
                             </small>
                         </div>
 
-                        <!-- Kategori -->
+                        {{-- Kategori --}}
                         <div class="form-group">
-                            <label for="id_kategori">
-                                Kategori <span style="color: red;">*</span>
-                            </label>
+                            <label for="id_kategori">Kategori <span style="color: red;">*</span></label>
                             <select name="id_kategori" id="id_kategori" class="form-control" required>
                                 <option value="">-- Pilih Kategori --</option>
                                 @foreach($categories as $category)
@@ -372,11 +393,9 @@
                             </select>
                         </div>
 
-                        <!-- Brand -->
+                        {{-- Brand --}}
                         <div class="form-group">
-                            <label for="id_brand">
-                                Brand <span style="color: red;">*</span>
-                            </label>
+                            <label for="id_brand">Brand <span style="color: red;">*</span></label>
                             <select name="id_brand" id="id_brand" class="form-control" required>
                                 <option value="">-- Pilih Brand --</option>
                                 @foreach($brands as $brand)
@@ -385,11 +404,9 @@
                             </select>
                         </div>
 
-                        <!-- Supplier -->
+                        {{-- Supplier --}}
                         <div class="form-group">
-                            <label for="id_supplier">
-                                Supplier <span style="color: red;">*</span>
-                            </label>
+                            <label for="id_supplier">Supplier <span style="color: red;">*</span></label>
                             <select name="id_supplier" id="id_supplier" class="form-control" required>
                                 <option value="">-- Pilih Supplier --</option>
                                 @foreach($suppliers as $supplier)
@@ -398,83 +415,65 @@
                             </select>
                         </div>
 
-                        <!-- Harga Jual -->
+                        {{-- Harga Jual --}}
                         <div class="form-group">
-                            <label for="harga_jual">
-                                Harga Jual <span style="color: red;">*</span>
-                            </label>
-                            <input 
-                                type="text" 
-                                class="form-control rupiah" 
-                                id="harga_jual" 
-                                name="harga_jual" 
-                                placeholder="0" 
-                                autocomplete="off" 
+                            <label for="harga_jual">Harga Jual <span style="color: red;">*</span></label>
+                            <input
+                                type="text"
+                                class="form-control rupiah"
+                                id="harga_jual"
+                                name="harga_jual"
+                                placeholder="0"
+                                autocomplete="off"
                                 required>
                         </div>
 
-                        <!-- Stok -->
+                        {{-- Stok --}}
                         <div class="form-group">
-                            <label for="stok">
-                                Stok <span style="color: red;">*</span>
-                            </label>
-                            <input 
-                                type="number" 
-                                class="form-control" 
-                                id="stok" 
-                                name="stok" 
-                                placeholder="0" 
-                                min="0" 
+                            <label for="stok">Stok <span style="color: red;">*</span></label>
+                            <input
+                                type="number"
+                                class="form-control"
+                                id="stok"
+                                name="stok"
+                                placeholder="0"
+                                min="0"
                                 required>
                         </div>
 
-                        <!-- Satuan -->
+                        {{-- ✅ TAMBAHKAN INPUT SATUAN (karena masih dibutuhkan di database) --}}
                         <div class="form-group">
-                            <label for="satuan">
-                                Satuan <span style="color: red;">*</span>
-                            </label>
-                            <input 
-                                type="text" 
-                                class="form-control" 
-                                id="satuan" 
-                                name="satuan" 
-                                placeholder="Pcs, Kg, Box, dll" 
+                            <label for="satuan">Satuan <span style="color: red;">*</span></label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="satuan"
+                                name="satuan"
+                                placeholder="Contoh: pcs, box, kg, liter"
+                                maxlength="30"
+                                required>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                Satuan unit barang (pcs, box, kg, liter, dll)
+                            </small>
+                        </div>
+
+                        {{-- Modal (Harga Beli) --}}
+                        <div class="form-group">
+                            <label for="modal">Modal (Harga Beli) <span style="color: red;">*</span></label>
+                            <input
+                                type="text"
+                                class="form-control rupiah"
+                                id="modal"
+                                name="modal"
+                                placeholder="0"
+                                autocomplete="off"
                                 required>
                         </div>
 
-                        <!-- Modal -->
-                        <div class="form-group">
-                            <label for="modal">
-                                Modal (Harga Beli) <span style="color: red;">*</span>
-                            </label>
-                            <input 
-                                type="text" 
-                                class="form-control rupiah" 
-                                id="modal" 
-                                name="modal" 
-                                placeholder="0" 
-                                autocomplete="off" 
-                                required>
-                        </div>
+                        {{-- ✅ HAPUS INPUT DISKON dari form tambah (diskon otomatis dari FSN) --}}
 
-                        <!-- Diskon -->
-                        <div class="form-group">
-                            <label for="diskon">
-                                Diskon (%) <span style="color: red;">*</span>
-                            </label>
-                            <input 
-                                type="number" 
-                                class="form-control diskon" 
-                                id="diskon" 
-                                name="diskon" 
-                                value="0" 
-                                min="0" 
-                                max="100" 
-                                step="1" 
-                                required>
-                        </div>
-
-                        <!-- Footer Buttons -->
+                        {{-- Footer --}}
                         <div class="modal-footer-custom">
                             <button type="button" class="btn-secondary" data-dismiss="modal">Batal</button>
                             <button type="submit" class="btn-success">
@@ -487,9 +486,9 @@
         </div>
     </div>
 
-    <!-- ========================================
-         MODAL: EDIT ITEM
-    ========================================= -->
+    {{-- ============================================================
+         MODAL: EDIT BARANG (per item)
+    ============================================================ --}}
     @foreach($items as $item)
     <div class="modal fade" id="editItemModal{{ $item->id_produk }}" tabindex="-1" role="dialog" aria-labelledby="editItemModalLabel{{ $item->id_produk }}" aria-hidden="true">
         <div class="modal-dialog" role="document">
@@ -507,42 +506,36 @@
                         @csrf
                         @method('PUT')
 
-                        <!-- Nama Produk -->
+                        {{-- Nama Produk --}}
                         <div class="form-group">
-                            <label for="nama_produk{{ $item->id_produk }}">
-                                Nama Produk <span style="color: red;">*</span>
-                            </label>
-                            <input 
-                                type="text" 
-                                class="form-control" 
-                                id="nama_produk{{ $item->id_produk }}" 
-                                name="nama_produk" 
-                                value="{{ $item->nama_produk }}" 
+                            <label for="nama_produk{{ $item->id_produk }}">Nama Produk <span style="color: red;">*</span></label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="nama_produk{{ $item->id_produk }}"
+                                name="nama_produk"
+                                value="{{ $item->nama_produk }}"
                                 required>
                         </div>
 
-                        <!-- Tanggal Masuk -->
+                        {{-- Tanggal Masuk --}}
                         <div class="form-group">
-                            <label for="tanggal_masuk{{ $item->id_produk }}">
-                                Tanggal Masuk <span style="color: red;">*</span>
-                            </label>
-                            <input 
-                                type="date" 
-                                class="form-control date-input" 
-                                id="tanggal_masuk{{ $item->id_produk }}" 
-                                name="tanggal_masuk" 
-                                value="{{ $item->tanggal_masuk ? $item->tanggal_masuk->format('Y-m-d') : now()->format('Y-m-d') }}" 
+                            <label for="tanggal_masuk{{ $item->id_produk }}">Tanggal Masuk <span style="color: red;">*</span></label>
+                            <input
+                                type="date"
+                                class="form-control date-input"
+                                id="tanggal_masuk{{ $item->id_produk }}"
+                                name="tanggal_masuk"
+                                value="{{ $item->tanggal_masuk ? $item->tanggal_masuk->format('Y-m-d') : now()->format('Y-m-d') }}"
                                 required>
                             <small class="form-text text-muted">
                                 <i class="fas fa-info-circle"></i> Ubah jika tanggal masuk tidak sesuai
                             </small>
                         </div>
 
-                        <!-- Kategori -->
+                        {{-- Kategori --}}
                         <div class="form-group">
-                            <label for="id_kategori{{ $item->id_produk }}">
-                                Kategori <span style="color: red;">*</span>
-                            </label>
+                            <label for="id_kategori{{ $item->id_produk }}">Kategori <span style="color: red;">*</span></label>
                             <select name="id_kategori" id="id_kategori{{ $item->id_produk }}" class="form-control" required>
                                 @foreach($categories as $category)
                                     <option value="{{ $category->id_kategori }}" {{ $category->id_kategori == $item->id_kategori ? 'selected' : '' }}>
@@ -552,11 +545,9 @@
                             </select>
                         </div>
 
-                        <!-- Brand -->
+                        {{-- Brand --}}
                         <div class="form-group">
-                            <label for="id_brand{{ $item->id_produk }}">
-                                Brand <span style="color: red;">*</span>
-                            </label>
+                            <label for="id_brand{{ $item->id_produk }}">Brand <span style="color: red;">*</span></label>
                             <select name="id_brand" id="id_brand{{ $item->id_produk }}" class="form-control" required>
                                 @foreach($brands as $brand)
                                     <option value="{{ $brand->id_brand }}" {{ $brand->id_brand == $item->id_brand ? 'selected' : '' }}>
@@ -566,11 +557,9 @@
                             </select>
                         </div>
 
-                        <!-- Supplier -->
+                        {{-- Supplier --}}
                         <div class="form-group">
-                            <label for="id_supplier{{ $item->id_produk }}">
-                                Supplier <span style="color: red;">*</span>
-                            </label>
+                            <label for="id_supplier{{ $item->id_produk }}">Supplier <span style="color: red;">*</span></label>
                             <select name="id_supplier" id="id_supplier{{ $item->id_produk }}" class="form-control" required>
                                 @foreach($suppliers as $supplier)
                                     <option value="{{ $supplier->id_supplier }}" {{ $supplier->id_supplier == $item->id_supplier ? 'selected' : '' }}>
@@ -580,66 +569,64 @@
                             </select>
                         </div>
 
-                        <!-- Harga Jual -->
+                        {{-- Harga Jual --}}
                         <div class="form-group">
-                            <label for="harga_jual{{ $item->id_produk }}">
-                                Harga Jual <span style="color: red;">*</span>
-                            </label>
-                            <input 
-                                type="text" 
-                                class="form-control rupiah" 
-                                id="harga_jual{{ $item->id_produk }}" 
-                                name="harga_jual" 
-                                value="{{ number_format($item->harga_jual, 0, ',', '.') }}" 
-                                autocomplete="off" 
+                            <label for="harga_jual{{ $item->id_produk }}">Harga Jual <span style="color: red;">*</span></label>
+                            <input
+                                type="text"
+                                class="form-control rupiah"
+                                id="harga_jual{{ $item->id_produk }}"
+                                name="harga_jual"
+                                value="{{ number_format($item->harga_jual, 0, ',', '.') }}"
+                                autocomplete="off"
                                 required>
                         </div>
 
-                        <!-- Stok -->
+                        {{-- Stok --}}
                         <div class="form-group">
-                            <label for="stok{{ $item->id_produk }}">
-                                Stok <span style="color: red;">*</span>
-                            </label>
-                            <input 
-                                type="number" 
-                                class="form-control" 
-                                id="stok{{ $item->id_produk }}" 
-                                name="stok" 
-                                value="{{ $item->stok }}" 
-                                min="0" 
+                            <label for="stok{{ $item->id_produk }}">Stok <span style="color: red;">*</span></label>
+                            <input
+                                type="number"
+                                class="form-control"
+                                id="stok{{ $item->id_produk }}"
+                                name="stok"
+                                value="{{ $item->stok }}"
+                                min="0"
                                 required>
                         </div>
 
-                        <!-- Satuan -->
+                        {{-- ✅ TAMBAHKAN INPUT SATUAN di form edit --}}
                         <div class="form-group">
-                            <label for="satuan{{ $item->id_produk }}">
-                                Satuan <span style="color: red;">*</span>
-                            </label>
-                            <input 
-                                type="text" 
-                                class="form-control" 
-                                id="satuan{{ $item->id_produk }}" 
-                                name="satuan" 
-                                value="{{ $item->satuan }}" 
+                            <label for="satuan{{ $item->id_produk }}">Satuan <span style="color: red;">*</span></label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="satuan{{ $item->id_produk }}"
+                                name="satuan"
+                                value="{{ $item->satuan }}"
+                                placeholder="Contoh: pcs, box, kg, liter"
+                                maxlength="30"
+                                required>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                Satuan unit barang
+                            </small>
+                        </div>
+
+                        {{-- Modal (Harga Beli) --}}
+                        <div class="form-group">
+                            <label for="modal{{ $item->id_produk }}">Modal (Harga Beli) <span style="color: red;">*</span></label>
+                            <input
+                                type="text"
+                                class="form-control rupiah"
+                                id="modal{{ $item->id_produk }}"
+                                name="modal"
+                                value="{{ number_format($item->modal, 0, ',', '.') }}"
+                                autocomplete="off"
                                 required>
                         </div>
 
-                        <!-- Modal -->
-                        <div class="form-group">
-                            <label for="modal{{ $item->id_produk }}">
-                                Modal (Harga Beli) <span style="color: red;">*</span>
-                            </label>
-                            <input 
-                                type="text" 
-                                class="form-control rupiah" 
-                                id="modal{{ $item->id_produk }}" 
-                                name="modal" 
-                                value="{{ number_format($item->modal, 0, ',', '.') }}" 
-                                autocomplete="off" 
-                                required>
-                        </div>
-
-                        <!-- Diskon (READ ONLY - Otomatis dari FSN) -->
+                        {{-- Diskon (Read Only - Otomatis dari FSN) --}}
                         <div class="form-group">
                             <label for="diskon{{ $item->id_produk }}">
                                 Diskon (%) <span style="color: #666; font-weight: normal;">(Otomatis dari FSN)</span>
@@ -660,7 +647,7 @@
                             </small>
                         </div>
 
-                        <!-- Footer Buttons -->
+                        {{-- Footer --}}
                         <div class="modal-footer-custom">
                             <button type="button" class="btn-secondary" data-dismiss="modal">Batal</button>
                             <button type="submit" class="btn-success">
@@ -674,12 +661,10 @@
     </div>
     @endforeach
 
-    
-
-    <!-- ========================================
+    {{-- ============================================================
          SESSION MESSAGES (SweetAlert)
-    ========================================= -->
-    @if (session('success'))
+    ============================================================ --}}
+    @if(session('success'))
     <script>
         Swal.fire({
             icon: 'success',
@@ -691,7 +676,7 @@
     </script>
     @endif
 
-    @if (session('error'))
+    @if(session('error'))
     <script>
         Swal.fire({
             icon: 'error',
@@ -703,31 +688,32 @@
     </script>
     @endif
 
-    <!-- ========================================
+    {{-- ============================================================
          JAVASCRIPT LIBRARIES
-    ========================================= -->
+    ============================================================ --}}
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- ========================================
+    {{-- ============================================================
          CUSTOM JAVASCRIPT
-    ========================================= -->
+    ============================================================ --}}
     <script>
-        // =====================================
+
+        // ============================================================
         // SIDEBAR TOGGLE
-        // =====================================
+        // ============================================================
         function toggleSidebar() {
             document.querySelector('.sidebar').classList.toggle('open');
             document.querySelector('.sidebar-overlay').classList.toggle('active');
         }
 
-        // =====================================
+        // ============================================================
         // CONFIRM DELETE
-        // =====================================
+        // ============================================================
         function confirmDelete(id) {
             Swal.fire({
                 title: 'Apakah Anda yakin?',
-                text: "Data barang ini akan dihapus permanen!",
+                text: 'Data barang ini akan dihapus permanen!',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
@@ -741,35 +727,35 @@
             });
         }
 
-        // =====================================
+        // ============================================================
         // DOCUMENT READY
-        // =====================================
-        $(document).ready(function() {
-            
-            // ====================================
-            // DATE VALIDATION FUNCTIONS
-            // ====================================
+        // ============================================================
+        $(document).ready(function () {
+
+            // ----------------------------------------------------------
+            // DATE HELPERS
+            // ----------------------------------------------------------
             function getTodayDate() {
                 const today = new Date();
-                const year = today.getFullYear();
+                const year  = today.getFullYear();
                 const month = String(today.getMonth() + 1).padStart(2, '0');
-                const day = String(today.getDate()).padStart(2, '0');
+                const day   = String(today.getDate()).padStart(2, '0');
                 return `${year}-${month}-${day}`;
             }
 
-            // Auto-set today's date when add modal opens
+            // Auto-set today's date saat modal tambah dibuka
             $('#addItemModal').on('shown.bs.modal', function () {
                 $('#tanggal_masuk').val(getTodayDate());
             });
 
-            // Validate date input
-            $(document).on('change', '.date-input', function() {
-                const selectedDate = new Date($(this).val());
-                const today = new Date();
+            // Validasi: tanggal tidak boleh melebihi hari ini
+            $(document).on('change', '.date-input', function () {
+                const selected = new Date($(this).val());
+                const today    = new Date();
                 today.setHours(0, 0, 0, 0);
-                selectedDate.setHours(0, 0, 0, 0);
+                selected.setHours(0, 0, 0, 0);
 
-                if (selectedDate > today) {
+                if (selected > today) {
                     Swal.fire({
                         icon: 'warning',
                         title: 'Tanggal Tidak Valid',
@@ -780,44 +766,35 @@
                 }
             });
 
-            // ====================================
-            // AJAX SEARCH FUNCTIONALITY
-            // ====================================
+            // ----------------------------------------------------------
+            // AJAX SEARCH
+            // ----------------------------------------------------------
             let searchTimeout;
-            const searchInput = $('#searchInput');
+            const searchInput  = $('#searchInput');
             const searchLoading = $('#searchLoading');
-            const searchIcon = $('#searchIcon');
-            const clearButton = $('#clearSearch');
-            const searchInfo = $('#searchInfo');
-            const searchTerm = $('#searchTerm');
-            const tableBody = $('#itemTableBody');
+            const searchIcon   = $('#searchIcon');
+            const clearButton  = $('#clearSearch');
+            const searchInfo   = $('#searchInfo');
+            const searchTerm   = $('#searchTerm');
+            const tableBody    = $('#itemTableBody');
 
-            // Search input handler
-            searchInput.on('input', function() {
+            searchInput.on('input', function () {
                 const query = $(this).val().trim();
                 clearTimeout(searchTimeout);
 
-                if (query.length > 0) {
-                    clearButton.show();
-                } else {
-                    clearButton.hide();
-                    searchInfo.hide();
-                }
+                clearButton.toggle(query.length > 0);
+                if (query.length === 0) searchInfo.hide();
 
-                searchTimeout = setTimeout(function() {
-                    performSearch(query);
-                }, 300);
+                searchTimeout = setTimeout(() => performSearch(query), 300);
             });
 
-            // Clear search button
-            clearButton.on('click', function() {
+            clearButton.on('click', function () {
                 searchInput.val('');
                 clearButton.hide();
                 searchInfo.hide();
                 performSearch('');
             });
 
-            // Perform search function
             function performSearch(query) {
                 searchIcon.hide();
                 searchLoading.show();
@@ -826,14 +803,12 @@
                     url: '{{ route("items.index") }}',
                     type: 'GET',
                     data: { q: query },
-                    success: function(response) {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(response, 'text/html');
+                    success: function (response) {
+                        const doc          = new DOMParser().parseFromString(response, 'text/html');
                         const newTableBody = doc.querySelector('#itemTableBody');
 
                         if (newTableBody) {
                             tableBody.html(newTableBody.innerHTML);
-                            // Reinitialize pagination after search
                             initPagination();
                         }
 
@@ -847,11 +822,9 @@
                         searchLoading.hide();
                         searchIcon.show();
                     },
-                    error: function(xhr, status, error) {
-                        console.error('Search error:', error);
+                    error: function () {
                         searchLoading.hide();
                         searchIcon.show();
-
                         Swal.fire({
                             icon: 'error',
                             title: 'Oops...',
@@ -863,182 +836,147 @@
                 });
             }
 
-            // Prevent form submission
-            $('#searchForm').on('submit', function(e) {
+            // Cegah submit form pencarian
+            $('#searchForm').on('submit', function (e) {
                 e.preventDefault();
-                return false;
             });
 
-            // ====================================
-            // PAGINATION FUNCTIONALITY
-            // ====================================
-            let currentPage = 1;
+            // ----------------------------------------------------------
+            // PAGINATION
+            // ----------------------------------------------------------
+            let currentPage  = 1;
             let itemsPerPage = 20;
-            let allRows = [];
+            let allRows      = [];
 
             function initPagination() {
-                // Get all table rows
                 allRows = Array.from(document.querySelectorAll('#itemTableBody tr'));
-                
-                // Update total items
                 document.getElementById('totalItems').textContent = allRows.length;
-                
-                // Reset to first page
                 currentPage = 1;
-                
-                // Render pagination
                 renderPagination();
             }
 
             function renderPagination() {
                 const totalPages = Math.ceil(allRows.length / itemsPerPage);
-                const start = (currentPage - 1) * itemsPerPage;
-                const end = start + itemsPerPage;
+                const start      = (currentPage - 1) * itemsPerPage;
+                const end        = start + itemsPerPage;
 
-                // Hide all rows
+                // Sembunyikan semua baris
                 allRows.forEach(row => row.style.display = 'none');
 
-                // Show only current page rows
-                const visibleRows = allRows.slice(start, end);
-                visibleRows.forEach(row => row.style.display = '');
+                // Tampilkan baris halaman aktif
+                allRows.slice(start, end).forEach(row => row.style.display = '');
 
-                // Update showing info
-                const actualStart = allRows.length > 0 ? start + 1 : 0;
-                const actualEnd = Math.min(end, allRows.length);
-                document.getElementById('showingStart').textContent = actualStart;
-                document.getElementById('showingEnd').textContent = actualEnd;
+                // Update info
+                document.getElementById('showingStart').textContent = allRows.length > 0 ? start + 1 : 0;
+                document.getElementById('showingEnd').textContent   = Math.min(end, allRows.length);
 
-                // Update buttons state
+                // Update tombol navigasi
                 document.getElementById('firstPage').disabled = currentPage === 1;
-                document.getElementById('prevPage').disabled = currentPage === 1;
-                document.getElementById('nextPage').disabled = currentPage === totalPages || totalPages === 0;
-                document.getElementById('lastPage').disabled = currentPage === totalPages || totalPages === 0;
+                document.getElementById('prevPage').disabled  = currentPage === 1;
+                document.getElementById('nextPage').disabled  = currentPage === totalPages || totalPages === 0;
+                document.getElementById('lastPage').disabled  = currentPage === totalPages || totalPages === 0;
 
-                // Render page numbers
                 renderPageNumbers(totalPages);
             }
 
             function renderPageNumbers(totalPages) {
-                const pageNumbersContainer = document.getElementById('pageNumbers');
-                pageNumbersContainer.innerHTML = '';
+                const container = document.getElementById('pageNumbers');
+                container.innerHTML = '';
 
                 if (totalPages <= 7) {
-                    // Show all pages
                     for (let i = 1; i <= totalPages; i++) {
-                        pageNumbersContainer.appendChild(createPageButton(i));
+                        container.appendChild(createPageButton(i));
                     }
                 } else {
-                    // Show first page
-                    pageNumbersContainer.appendChild(createPageButton(1));
+                    container.appendChild(createPageButton(1));
 
-                    if (currentPage > 3) {
-                        pageNumbersContainer.appendChild(createEllipsis());
-                    }
+                    if (currentPage > 3) container.appendChild(createEllipsis());
 
-                    // Show pages around current page
                     const startPage = Math.max(2, currentPage - 1);
-                    const endPage = Math.min(totalPages - 1, currentPage + 1);
+                    const endPage   = Math.min(totalPages - 1, currentPage + 1);
 
                     for (let i = startPage; i <= endPage; i++) {
-                        pageNumbersContainer.appendChild(createPageButton(i));
+                        container.appendChild(createPageButton(i));
                     }
 
-                    if (currentPage < totalPages - 2) {
-                        pageNumbersContainer.appendChild(createEllipsis());
-                    }
+                    if (currentPage < totalPages - 2) container.appendChild(createEllipsis());
 
-                    // Show last page
-                    if (totalPages > 1) {
-                        pageNumbersContainer.appendChild(createPageButton(totalPages));
-                    }
+                    if (totalPages > 1) container.appendChild(createPageButton(totalPages));
                 }
             }
 
             function createPageButton(pageNum) {
-                const button = document.createElement('button');
-                button.className = 'pagination-btn' + (pageNum === currentPage ? ' active' : '');
-                button.textContent = pageNum;
-                button.addEventListener('click', () => {
+                const btn = document.createElement('button');
+                btn.className = 'pagination-btn' + (pageNum === currentPage ? ' active' : '');
+                btn.textContent = pageNum;
+                btn.addEventListener('click', () => {
                     currentPage = pageNum;
                     renderPagination();
                 });
-                return button;
+                return btn;
             }
 
             function createEllipsis() {
                 const span = document.createElement('span');
-                span.className = 'pagination-ellipsis';
+                span.className   = 'pagination-ellipsis';
                 span.textContent = '...';
                 return span;
             }
 
-            // Event listeners for pagination controls
             document.getElementById('firstPage').addEventListener('click', () => {
                 currentPage = 1;
                 renderPagination();
             });
 
             document.getElementById('prevPage').addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderPagination();
-                }
+                if (currentPage > 1) { currentPage--; renderPagination(); }
             });
 
             document.getElementById('nextPage').addEventListener('click', () => {
                 const totalPages = Math.ceil(allRows.length / itemsPerPage);
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    renderPagination();
-                }
+                if (currentPage < totalPages) { currentPage++; renderPagination(); }
             });
 
             document.getElementById('lastPage').addEventListener('click', () => {
-                const totalPages = Math.ceil(allRows.length / itemsPerPage);
-                currentPage = totalPages;
+                currentPage = Math.ceil(allRows.length / itemsPerPage);
                 renderPagination();
             });
 
-            // Page size change
-            document.getElementById('pageSize').addEventListener('change', function() {
+            document.getElementById('pageSize').addEventListener('change', function () {
                 itemsPerPage = parseInt(this.value);
-                currentPage = 1;
+                currentPage  = 1;
                 renderPagination();
             });
 
-            // Initialize pagination on page load
+            // Init saat halaman pertama load
             initPagination();
-        });
-    </script>
 
-    <script>
-        // =====================================
-        // RUPIAH FORMAT (AUTO DOT SEPARATOR)
-        // =====================================
-        document.querySelectorAll('.rupiah').forEach(function(input) {
-            // Format on input
+        }); // end document.ready
+
+        // ============================================================
+        // RUPIAH FORMAT (Titik Sebagai Pemisah Ribuan)
+        // ============================================================
+        document.querySelectorAll('.rupiah').forEach(function (input) {
             input.addEventListener('input', function () {
-                let value = this.value.replace(/[^0-9]/g, '');
-                this.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                const raw = this.value.replace(/[^0-9]/g, '');
+                this.value = raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
             });
 
-            // Remove dots before form submit
             input.closest('form').addEventListener('submit', function () {
                 input.value = input.value.replace(/\./g, '');
             });
         });
 
-        // =====================================
-        // DISCOUNT INPUT (NUMBERS ONLY, MAX 100)
-        // =====================================
-        document.querySelectorAll('.diskon').forEach(function(input) {
+        // ============================================================
+        // DISKON INPUT (Angka Saja, Maks 100) - OPTIONAL
+        // ============================================================
+        document.querySelectorAll('.diskon').forEach(function (input) {
             input.addEventListener('input', function () {
                 this.value = this.value.replace(/[^0-9]/g, '');
-                if (this.value > 100) {
-                    this.value = 100;
-                }
+                if (parseInt(this.value) > 100) this.value = 100;
             });
         });
+
     </script>
 </body>
 </html>
