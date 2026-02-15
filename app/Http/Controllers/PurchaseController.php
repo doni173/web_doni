@@ -149,7 +149,7 @@ class PurchaseController extends Controller
         $items = Item::with('supplier')->where('stok', '>=', 0)->get();
         $suppliers = Supplier::all();
         
-        return view('purchase.index', compact('items', 'suppliers'));
+        return view('purchase', compact('items', 'suppliers'));
     }
 
     /**
