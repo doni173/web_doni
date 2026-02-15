@@ -10,6 +10,116 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        /* ================= ACTION BUTTONS FIX ================= */
+        .action-buttons {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: nowrap;
+        }
+
+        .action-buttons form {
+            display: inline-flex !important;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* ================= PAGINATION STYLES ================= */
+        .pagination-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 4px 4px 4px;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 13px;
+            color: #374151;
+        }
+
+        .pagination-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pagination-left label {
+            font-weight: 500;
+            color: #374151;
+            white-space: nowrap;
+        }
+
+        .pagination-per-page {
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 4px 8px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #374151;
+            font-weight: 500;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .pagination-per-page:hover,
+        .pagination-per-page:focus {
+            border-color: #06b6d4;
+        }
+
+        .pagination-center {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .pagination-nav {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .pagination-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            transition: all 0.18s;
+            outline: none;
+            user-select: none;
+        }
+
+        .pagination-btn:hover:not(:disabled):not(.active) {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+        }
+
+        .pagination-btn.active {
+            background: #06b6d4;
+            border-color: #06b6d4;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.38;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn i {
+            font-size: 12px;
+        }
+    </style>
 </head>
 <body>
     @include('layouts.navbar')
@@ -77,7 +187,7 @@
                     </thead>
                     <tbody id="purchaseTableBody">
                         @forelse($purchases as $purchase)
-                        <tr>
+                        <tr data-purchase-row>
                             <td data-label="ID Pembelian">
                                 <span class="id-badge">{{ $purchase->id_pembelian }}</span>
                             </td>
@@ -96,7 +206,7 @@
                                         <i class="fas fa-eye"></i>
                                     </a>
                                     @if(Auth::check() && Auth::user()->role === 'admin')
-                                    <form action="{{ route('purchase.destroy', $purchase->id_pembelian) }}" method="POST" style="display: inline-block;" onsubmit="return confirmDelete(event, this)">
+                                    <form action="{{ route('purchase.destroy', $purchase->id_pembelian) }}" method="POST" onsubmit="return confirmDelete(event, this)">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn-danger" title="Hapus Transaksi">
@@ -121,11 +231,22 @@
                 </table>
             </div>
 
-            @if(isset($purchases) && $purchases instanceof \Illuminate\Pagination\LengthAwarePaginator && $purchases->hasPages())
-            <div class="pagination-wrapper">
-                {{ $purchases->appends(request()->query())->links() }}
+            <!-- ================= PAGINATION ================= -->
+            <div class="pagination-wrapper" id="purchasePaginationWrapper">
+                <div class="pagination-left">
+                    <label for="purchasePerPage">Tampilkan:</label>
+                    <select class="pagination-per-page" id="purchasePerPage" onchange="changePurchasePerPage(this.value)">
+                        <option value="10">10 baris</option>
+                        <option value="20" selected>20 baris</option>
+                        <option value="50">50 baris</option>
+                        <option value="100">100 baris</option>
+                    </select>
+                </div>
+                <div class="pagination-center" id="purchasePaginationInfo"></div>
+                <div class="pagination-nav" id="purchasePaginationNav"></div>
             </div>
-            @endif
+            <!-- ================= END PAGINATION ================= -->
+
         </div>
     </div>
 
@@ -157,14 +278,15 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        // ================= SIDEBAR =================
         function toggleSidebar() {
             document.querySelector('.sidebar').classList.toggle('open');
             document.querySelector('.sidebar-overlay').classList.toggle('active');
         }
 
+        // ================= DELETE CONFIRM =================
         function confirmDelete(event, form) {
             event.preventDefault();
-            
             Swal.fire({
                 title: 'Apakah Anda yakin?',
                 text: "Data transaksi pembelian ini akan dihapus permanen dan stok akan dikurangi kembali!",
@@ -179,11 +301,102 @@
                     form.submit();
                 }
             });
-            
             return false;
         }
 
+        // ================= PAGINATION STATE =================
+        const purchasePagination = {
+            currentPage: 1,
+            perPage: 20,
+            filteredRows: []
+        };
+
+        // ================= PAGINATION HELPERS =================
+        function renderPagination(state, infoId, navId, goToPage) {
+            const total = state.filteredRows.length;
+            const totalPages = Math.max(1, Math.ceil(total / state.perPage));
+            const start = total === 0 ? 0 : (state.currentPage - 1) * state.perPage + 1;
+            const end   = Math.min(state.currentPage * state.perPage, total);
+
+            document.getElementById(infoId).textContent =
+                `Menampilkan ${start} - ${end} dari ${total} data`;
+
+            const nav = document.getElementById(navId);
+            nav.innerHTML = '';
+
+            nav.appendChild(createPagBtn('<i class="bi bi-chevron-double-left"></i>', state.currentPage === 1, () => goToPage(1)));
+            nav.appendChild(createPagBtn('<i class="bi bi-chevron-left"></i>', state.currentPage === 1, () => goToPage(state.currentPage - 1)));
+
+            pageRange(state.currentPage, totalPages, 5).forEach(p => {
+                const btn = createPagBtn(p, false, () => goToPage(p));
+                if (p === state.currentPage) btn.classList.add('active');
+                nav.appendChild(btn);
+            });
+
+            nav.appendChild(createPagBtn('<i class="bi bi-chevron-right"></i>', state.currentPage === totalPages, () => goToPage(state.currentPage + 1)));
+            nav.appendChild(createPagBtn('<i class="bi bi-chevron-double-right"></i>', state.currentPage === totalPages, () => goToPage(totalPages)));
+        }
+
+        function createPagBtn(html, disabled, onClick) {
+            const btn = document.createElement('button');
+            btn.className = 'pagination-btn';
+            btn.innerHTML = html;
+            btn.disabled = disabled;
+            if (!disabled) btn.addEventListener('click', onClick);
+            return btn;
+        }
+
+        function pageRange(current, total, maxVisible) {
+            if (total <= maxVisible) {
+                return Array.from({ length: total }, (_, i) => i + 1);
+            }
+            let start = Math.max(1, current - Math.floor(maxVisible / 2));
+            let end = start + maxVisible - 1;
+            if (end > total) {
+                end = total;
+                start = Math.max(1, end - maxVisible + 1);
+            }
+            return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+        }
+
+        function applyPaginationVisibility(state) {
+            const start = (state.currentPage - 1) * state.perPage;
+            const end   = start + state.perPage;
+            state.filteredRows.forEach((row, i) => {
+                row.style.display = (i >= start && i < end) ? '' : 'none';
+            });
+        }
+
+        // ================= PURCHASE TABLE PAGINATION =================
+        function initPurchasePagination() {
+            const allRows = Array.from(document.querySelectorAll('#purchaseTableBody tr[data-purchase-row]'));
+            purchasePagination.filteredRows = allRows;
+            purchasePagination.currentPage  = 1;
+            applyPaginationVisibility(purchasePagination);
+            renderPagination(purchasePagination, 'purchasePaginationInfo', 'purchasePaginationNav', goToPurchasePage);
+        }
+
+        function goToPurchasePage(page) {
+            const totalPages = Math.max(1, Math.ceil(purchasePagination.filteredRows.length / purchasePagination.perPage));
+            purchasePagination.currentPage = Math.min(Math.max(1, page), totalPages);
+            applyPaginationVisibility(purchasePagination);
+            renderPagination(purchasePagination, 'purchasePaginationInfo', 'purchasePaginationNav', goToPurchasePage);
+        }
+
+        function changePurchasePerPage(val) {
+            purchasePagination.perPage = parseInt(val);
+            goToPurchasePage(1);
+        }
+
+        function reinitPaginationAfterSearch() {
+            initPurchasePagination();
+        }
+
         $(document).ready(function() {
+
+            // Init pagination on load
+            initPurchasePagination();
+
             let searchTimeout;
             const searchInput = $('#searchInput');
             const dateFilter = $('#dateFilter');
@@ -205,7 +418,6 @@
             searchInput.on('input', function() {
                 const query = $(this).val().trim();
                 clearTimeout(searchTimeout);
-
                 toggleClearButton();
 
                 searchTimeout = setTimeout(function() {
@@ -228,7 +440,6 @@
                 dateFilter.val('');
                 clearButton.hide();
                 searchInfo.hide();
-                
                 window.location.href = '{{ route("purchase.history") }}';
             });
 
@@ -257,6 +468,9 @@
                             }
 
                             updateSearchInfo(query, date);
+
+                            // Re-init pagination after AJAX updates rows
+                            reinitPaginationAfterSearch();
 
                         } catch (error) {
                             console.error('Parse error:', error);

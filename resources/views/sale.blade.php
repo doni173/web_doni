@@ -10,6 +10,105 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        /* ================= PAGINATION STYLES ================= */
+        .pagination-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 4px 4px 4px;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 13px;
+            color: #374151;
+        }
+
+        .pagination-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pagination-left label {
+            font-weight: 500;
+            color: #374151;
+            white-space: nowrap;
+        }
+
+        .pagination-per-page {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 4px 8px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #374151;
+            font-weight: 500;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .pagination-per-page:hover,
+        .pagination-per-page:focus {
+            border-color: #06b6d4;
+        }
+
+        .pagination-center {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .pagination-nav {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .pagination-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            transition: all 0.18s;
+            outline: none;
+            user-select: none;
+        }
+
+        .pagination-btn:hover:not(:disabled):not(.active) {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+        }
+
+        .pagination-btn.active {
+            background: #06b6d4;
+            border-color: #06b6d4;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.38;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn i {
+            font-size: 12px;
+        }
+    </style>
 </head>
 <body>
 
@@ -95,6 +194,22 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- ================= PRODUCT PAGINATION ================= -->
+                <div class="pagination-wrapper" id="productPaginationWrapper">
+                    <div class="pagination-left">
+                        <label for="productPerPage">Tampilkan:</label>
+                        <select class="pagination-per-page" id="productPerPage" onchange="changeProductPerPage(this.value)">
+                            <option value="10">10 baris</option>
+                            <option value="20" selected>20 baris</option>
+                            <option value="50">50 baris</option>
+                            <option value="100">100 baris</option>
+                        </select>
+                    </div>
+                    <div class="pagination-center" id="productPaginationInfo"></div>
+                    <div class="pagination-nav" id="productPaginationNav"></div>
+                </div>
+                <!-- ================= END PRODUCT PAGINATION ================= -->
             </div>
 
             <!-- ================= SERVICE SECTION ================= -->
@@ -159,6 +274,22 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- ================= SERVICE PAGINATION ================= -->
+                <div class="pagination-wrapper" id="servicePaginationWrapper">
+                    <div class="pagination-left">
+                        <label for="servicePerPage">Tampilkan:</label>
+                        <select class="pagination-per-page" id="servicePerPage" onchange="changeServicePerPage(this.value)">
+                            <option value="10">10 baris</option>
+                            <option value="20" selected>20 baris</option>
+                            <option value="50">50 baris</option>
+                            <option value="100">100 baris</option>
+                        </select>
+                    </div>
+                    <div class="pagination-center" id="servicePaginationInfo"></div>
+                    <div class="pagination-nav" id="servicePaginationNav"></div>
+                </div>
+                <!-- ================= END SERVICE PAGINATION ================= -->
             </div>
 
         </div>
@@ -302,38 +433,190 @@ Swal.fire({
 let cart = [];
 let totalBelanja = 0;
 
+// ================= PAGINATION STATE =================
+const productPagination = {
+    currentPage: 1,
+    perPage: 20,
+    filteredRows: []
+};
+
+const servicePagination = {
+    currentPage: 1,
+    perPage: 20,
+    filteredRows: []
+};
+
 // ================= SIDEBAR TOGGLE ================= 
 function toggleSidebar() {
     document.querySelector('.sidebar').classList.toggle('open');
     document.querySelector('.sidebar-overlay').classList.toggle('active');
 }
 
-// ================= SEARCH FUNCTIONALITY ================= 
-$(document).ready(function() {
-    // Search Product
-    $('#searchProduct').on('input', function() {
-        const query = $(this).val().toLowerCase().trim();
-        $('#productTableBody tr').each(function() {
-            const productName = $(this).data('product-search');
-            if (productName && productName.includes(query)) {
-                $(this).show();
-            } else if (productName) {
-                $(this).hide();
-            }
-        });
+// ================= PAGINATION HELPERS =================
+
+/**
+ * Render pagination UI for a given table.
+ * @param {object} state        - pagination state object (productPagination / servicePagination)
+ * @param {string} infoId       - element id for info text   e.g. 'productPaginationInfo'
+ * @param {string} navId        - element id for nav buttons e.g. 'productPaginationNav'
+ * @param {function} goToPage   - callback function(page)
+ */
+function renderPagination(state, infoId, navId, goToPage) {
+    const total = state.filteredRows.length;
+    const totalPages = Math.max(1, Math.ceil(total / state.perPage));
+    const start = total === 0 ? 0 : (state.currentPage - 1) * state.perPage + 1;
+    const end   = Math.min(state.currentPage * state.perPage, total);
+
+    // Info text
+    document.getElementById(infoId).textContent =
+        `Menampilkan ${start} - ${end} dari ${total} data`;
+
+    // Nav buttons
+    const nav = document.getElementById(navId);
+    nav.innerHTML = '';
+
+    // First page
+    const btnFirst = createPagBtn('<i class="bi bi-chevron-double-left"></i>', state.currentPage === 1, () => goToPage(1));
+    nav.appendChild(btnFirst);
+
+    // Prev page
+    const btnPrev = createPagBtn('<i class="bi bi-chevron-left"></i>', state.currentPage === 1, () => goToPage(state.currentPage - 1));
+    nav.appendChild(btnPrev);
+
+    // Page numbers (show up to 5 pages around current)
+    const range = pageRange(state.currentPage, totalPages, 5);
+    range.forEach(p => {
+        const btn = createPagBtn(p, false, () => goToPage(p));
+        if (p === state.currentPage) btn.classList.add('active');
+        nav.appendChild(btn);
     });
 
-    // Search Service
+    // Next page
+    const btnNext = createPagBtn('<i class="bi bi-chevron-right"></i>', state.currentPage === totalPages, () => goToPage(state.currentPage + 1));
+    nav.appendChild(btnNext);
+
+    // Last page
+    const btnLast = createPagBtn('<i class="bi bi-chevron-double-right"></i>', state.currentPage === totalPages, () => goToPage(totalPages));
+    nav.appendChild(btnLast);
+}
+
+function createPagBtn(html, disabled, onClick) {
+    const btn = document.createElement('button');
+    btn.className = 'pagination-btn';
+    btn.innerHTML = html;
+    btn.disabled = disabled;
+    if (!disabled) btn.addEventListener('click', onClick);
+    return btn;
+}
+
+function pageRange(current, total, maxVisible) {
+    if (total <= maxVisible) {
+        return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    let start = Math.max(1, current - Math.floor(maxVisible / 2));
+    let end = start + maxVisible - 1;
+    if (end > total) {
+        end = total;
+        start = Math.max(1, end - maxVisible + 1);
+    }
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
+
+/**
+ * Apply pagination visibility to rows.
+ */
+function applyPaginationVisibility(state) {
+    const start = (state.currentPage - 1) * state.perPage;
+    const end   = start + state.perPage;
+    state.filteredRows.forEach((row, i) => {
+        row.style.display = (i >= start && i < end) ? '' : 'none';
+    });
+}
+
+// ================= PRODUCT PAGINATION =================
+
+function initProductPagination() {
+    const allRows = Array.from(document.querySelectorAll('#productTableBody tr[data-product-search]'));
+    productPagination.filteredRows = allRows;
+    productPagination.currentPage  = 1;
+    applyPaginationVisibility(productPagination);
+    renderPagination(productPagination, 'productPaginationInfo', 'productPaginationNav', goToProductPage);
+}
+
+function goToProductPage(page) {
+    const totalPages = Math.max(1, Math.ceil(productPagination.filteredRows.length / productPagination.perPage));
+    productPagination.currentPage = Math.min(Math.max(1, page), totalPages);
+    applyPaginationVisibility(productPagination);
+    renderPagination(productPagination, 'productPaginationInfo', 'productPaginationNav', goToProductPage);
+}
+
+function changeProductPerPage(val) {
+    productPagination.perPage = parseInt(val);
+    goToProductPage(1);
+}
+
+// ================= SERVICE PAGINATION =================
+
+function initServicePagination() {
+    const allRows = Array.from(document.querySelectorAll('#serviceTableBody tr[data-service-search]'));
+    servicePagination.filteredRows = allRows;
+    servicePagination.currentPage  = 1;
+    applyPaginationVisibility(servicePagination);
+    renderPagination(servicePagination, 'servicePaginationInfo', 'servicePaginationNav', goToServicePage);
+}
+
+function goToServicePage(page) {
+    const totalPages = Math.max(1, Math.ceil(servicePagination.filteredRows.length / servicePagination.perPage));
+    servicePagination.currentPage = Math.min(Math.max(1, page), totalPages);
+    applyPaginationVisibility(servicePagination);
+    renderPagination(servicePagination, 'servicePaginationInfo', 'servicePaginationNav', goToServicePage);
+}
+
+function changeServicePerPage(val) {
+    servicePagination.perPage = parseInt(val);
+    goToServicePage(1);
+}
+
+// ================= SEARCH FUNCTIONALITY ================= 
+$(document).ready(function() {
+
+    // Init pagination on load
+    initProductPagination();
+    initServicePagination();
+
+    // Search Product — refilter then repaginate
+    $('#searchProduct').on('input', function() {
+        const query = $(this).val().toLowerCase().trim();
+        const allRows = Array.from(document.querySelectorAll('#productTableBody tr[data-product-search]'));
+
+        if (query === '') {
+            productPagination.filteredRows = allRows;
+        } else {
+            productPagination.filteredRows = allRows.filter(row =>
+                row.getAttribute('data-product-search').includes(query)
+            );
+            // Hide all first, then show will be applied by pagination
+            allRows.forEach(r => r.style.display = 'none');
+        }
+
+        goToProductPage(1);
+    });
+
+    // Search Service — refilter then repaginate
     $('#searchService').on('input', function() {
         const query = $(this).val().toLowerCase().trim();
-        $('#serviceTableBody tr').each(function() {
-            const serviceName = $(this).data('service-search');
-            if (serviceName && serviceName.includes(query)) {
-                $(this).show();
-            } else if (serviceName) {
-                $(this).hide();
-            }
-        });
+        const allRows = Array.from(document.querySelectorAll('#serviceTableBody tr[data-service-search]'));
+
+        if (query === '') {
+            servicePagination.filteredRows = allRows;
+        } else {
+            servicePagination.filteredRows = allRows.filter(row =>
+                row.getAttribute('data-service-search').includes(query)
+            );
+            allRows.forEach(r => r.style.display = 'none');
+        }
+
+        goToServicePage(1);
     });
 
     // ================= ADD TO CART ================= 
