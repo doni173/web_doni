@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Transaksi Pembelian | Sistem Inventory dan Kasir</title>
-
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -138,8 +138,6 @@
                 <form id="purchase-form">
                     @csrf
                     
-                    {{-- PERUBAHAN: Hapus input tanggal manual, gunakan waktu otomatis --}}
-                    {{-- Tampilkan info waktu transaksi saja untuk user --}}
                     <div class="form-row">
                         <div class="form-group col-md-12">
                             <label>
@@ -147,7 +145,7 @@
                             </label>
                             <div class="transaction-time-display">
                                 <i class="bi bi-clock"></i>
-                                <span id="current-datetime">{{ \Carbon\Carbon::now('Asia/Jakarta')->translatedFormat('l, d F Y H:i') }} WIB</span>
+                                <span id="current-datetime">{{ \Carbon\Carbon::now('Asia/Jakarta')->translatedFormat('l, d F Y H:i:s') }} WIB</span>
                             </div>
                             <small class="text-muted">Waktu transaksi akan tercatat secara otomatis saat Anda menyelesaikan pembelian</small>
                         </div>
@@ -195,7 +193,7 @@
             </div>
 
             <div class="form-group">
-                <label>Supplier</label>
+                <label>Supplier <span style="color: #ef4444;">*</span></label>
                 <select id="modal-supplier-id" class="form-control" required>
                     <option value="">-- Pilih Supplier --</option>
                     @foreach ($suppliers as $s)
@@ -210,12 +208,12 @@
             </div>
 
             <div class="form-group">
-                <label>Jumlah Beli</label>
+                <label>Jumlah Beli <span style="color: #ef4444;">*</span></label>
                 <input type="number" id="modal-purchase-qty" class="form-control" value="1" min="1" required>
             </div>
 
             <div class="form-group">
-                <label>Harga Beli</label>
+                <label>Harga Beli (per unit) <span style="color: #ef4444;">*</span></label>
                 <input type="number" id="modal-product-price" class="form-control" min="0" required>
             </div>
 
@@ -229,7 +227,6 @@
     </div>
 </div>
 
-<!-- ================= SWEETALERT ================= -->
 @if(session('success'))
 <script>
 Swal.fire({
@@ -257,8 +254,198 @@ Swal.fire({
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
 
+<style>
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: var(--radius-lg);
+    width: 90%;
+    max-width: 500px;
+    box-shadow: var(--shadow-xl);
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 2px solid var(--gray-200);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.modal-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-title h5 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.modal-title i {
+    font-size: 22px;
+}
+
+.close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 28px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-base);
+}
+
+.close:hover,
+.close:focus {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-body .form-group {
+    margin-bottom: 20px;
+}
+
+.modal-body .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.modal-body .form-control {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    transition: var(--transition-base);
+}
+
+.modal-body .form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.modal-body .form-control[readonly] {
+    background-color: var(--gray-100);
+    cursor: not-allowed;
+}
+
+.modal-footer-custom {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 20px;
+    border-top: 1px solid var(--gray-200);
+    margin-top: 20px;
+}
+
+.transaction-time-display {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-left: 4px solid var(--primary-color);
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    color: #1e40af;
+    margin-top: 8px;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
+}
+
+.transaction-time-display i {
+    font-size: 20px;
+    color: var(--primary-color);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+    }
+
+    .modal-header {
+        padding: 16px 20px;
+    }
+
+    .modal-title h5 {
+        font-size: 16px;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    .modal-footer-custom {
+        flex-direction: column;
+    }
+
+    .btn-secondary,
+    .btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+}
+</style>
+
 <script>
-// ================= GLOBAL VARIABLES ================= 
 const modal = document.getElementById('purchaseModal');
 const summaryBody = document.getElementById('summary-body');
 const totalBiayaEl = document.getElementById('total_biaya');
@@ -266,7 +453,6 @@ const totalBiayaEl = document.getElementById('total_biaya');
 let purchaseCart = [];
 let totalBiaya = 0;
 
-// ================= UPDATE REAL-TIME CLOCK ================= 
 function updateCurrentDateTime() {
     const now = new Date();
     const options = { 
@@ -277,25 +463,22 @@ function updateCurrentDateTime() {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        timeZone: 'Asia/Jakarta'
+        timeZone: 'Asia/Jakarta',
+        hour12: false
     };
     const formattedDate = now.toLocaleDateString('id-ID', options);
     document.getElementById('current-datetime').textContent = formattedDate + ' WIB';
 }
 
-// Update waktu setiap detik
 setInterval(updateCurrentDateTime, 1000);
-updateCurrentDateTime(); // Panggil sekali saat load
+updateCurrentDateTime();
 
-// ================= SIDEBAR TOGGLE ================= 
 function toggleSidebar() {
     document.querySelector('.sidebar').classList.toggle('open');
     document.querySelector('.sidebar-overlay').classList.toggle('active');
 }
 
-// ================= SEARCH FUNCTIONALITY ================= 
 $(document).ready(function() {
-    // Search Product
     $('#searchProduct').on('input', function() {
         const query = $(this).val().toLowerCase().trim();
         $('#productTableBody tr').each(function() {
@@ -308,10 +491,10 @@ $(document).ready(function() {
         });
     });
 
-    // ================= OPEN MODAL ================= 
     $(document).on('click', '.btn-purchase', function() {
         const b = $(this);
         modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
 
         document.getElementById('modal-product-id').value = b.data('id');
         document.getElementById('modal-product-name').value = b.data('name');
@@ -321,25 +504,31 @@ $(document).ready(function() {
         document.getElementById('modal-supplier-id').value = '';
     });
 
-    // ================= CLOSE MODAL ================= 
     $('.close, .close-modal').on('click', function() {
         modal.style.display = 'none';
+        document.body.style.overflow = '';
     });
 
-    // Close modal ketika click di luar modal
     window.onclick = function(event) {
         if (event.target == modal) {
             modal.style.display = "none";
+            document.body.style.overflow = '';
         }
     }
 
-    // ================= ADD TO CART ================= 
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && modal.style.display === 'block') {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    });
+
     $('#add-to-summary-btn').on('click', function() {
         const supplierId = document.getElementById('modal-supplier-id').value;
         const qty = document.getElementById('modal-purchase-qty').value;
         const price = document.getElementById('modal-product-price').value;
+        const productId = document.getElementById('modal-product-id').value;
 
-        // Validasi input
         if (!supplierId) {
             Swal.fire({
                 icon: 'warning',
@@ -360,41 +549,47 @@ $(document).ready(function() {
             });
             return;
         }
-        if (!price || price <= 0) {
+        if (!price || price < 0) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Perhatian',
-                text: 'Harga beli harus lebih dari 0!',
+                text: 'Harga beli tidak valid!',
                 timer: 2000,
                 showConfirmButton: false
             });
             return;
         }
 
-        const item = {
-            id: document.getElementById('modal-product-id').value,
-            nama: document.getElementById('modal-product-name').value,
-            supplier_id: supplierId,
-            stok_lama: parseInt(document.getElementById('modal-current-stock').value),
-            jumlah_beli: parseInt(qty),
-            harga: parseInt(price),
-        };
+        const existingIndex = purchaseCart.findIndex(item => item.id === productId);
+        
+        if (existingIndex !== -1) {
+            purchaseCart[existingIndex].jumlah_beli = parseInt(purchaseCart[existingIndex].jumlah_beli) + parseInt(qty);
+        } else {
+            const item = {
+                id: productId,
+                nama: document.getElementById('modal-product-name').value,
+                supplier_id: supplierId,
+                stok_lama: parseInt(document.getElementById('modal-current-stock').value),
+                jumlah_beli: parseInt(qty),
+                harga: parseInt(price),
+            };
+            purchaseCart.push(item);
+        }
 
-        purchaseCart.push(item);
         renderPurchaseCart();
         modal.style.display = 'none';
+        document.body.style.overflow = '';
 
         Swal.fire({
             icon: 'success',
             title: 'Ditambahkan',
-            text: `${item.nama} ditambahkan ke keranjang`,
+            text: `${document.getElementById('modal-product-name').value} ditambahkan ke keranjang`,
             timer: 1000,
             showConfirmButton: false
         });
     });
 });
 
-// ================= RENDER CART ================= 
 function renderPurchaseCart() {
     summaryBody.innerHTML = '';
     totalBiaya = 0;
@@ -427,7 +622,9 @@ function renderPurchaseCart() {
             <td data-label="Nama">
                 <span class="product-name">${item.nama}</span>
             </td>
-            <td data-label="Stok Lama">${item.stok_lama}</td>
+            <td data-label="Stok Lama">
+                <span class="stock-number">${item.stok_lama}</span>
+            </td>
             <td data-label="Jumlah Beli">
                 <div class="quantity-control">
                     <button type="button" class="btn-qty" onclick="decreasePurchaseQty(${idx})">
@@ -444,11 +641,11 @@ function renderPurchaseCart() {
                 </div>
             </td>
             <td data-label="Stok Baru">
-                <strong>${item.stok_lama + item.jumlah_beli}</strong>
+                <strong style="color: #10b981;">${item.stok_lama + item.jumlah_beli}</strong>
             </td>
-            <td data-label="Harga">Rp ${item.harga.toLocaleString('id-ID')}</td>
+            <td data-label="Harga">Rp ${formatRupiah(item.harga.toString())}</td>
             <td data-label="Total">
-                <strong>Rp ${total.toLocaleString('id-ID')}</strong>
+                <strong>Rp ${formatRupiah(total.toString())}</strong>
             </td>
             <td data-label="Aksi">
                 <button type="button" class="btn-delete" onclick="removeFromPurchaseCart(${idx})" title="Hapus">
@@ -462,12 +659,14 @@ function renderPurchaseCart() {
     $('#btnCheckout').prop('disabled', false);
 }
 
-// ================= UPDATE SUMMARY ================= 
-function updateSummary() {
-    totalBiayaEl.innerText = 'Rp ' + totalBiaya.toLocaleString('id-ID');
+function formatRupiah(angka) {
+    return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-// ================= QUANTITY CONTROLS ================= 
+function updateSummary() {
+    totalBiayaEl.innerText = 'Rp ' + formatRupiah(totalBiaya.toString());
+}
+
 function increasePurchaseQty(index) {
     purchaseCart[index].jumlah_beli++;
     renderPurchaseCart();
@@ -485,7 +684,7 @@ function decreasePurchaseQty(index) {
 function updatePurchaseQty(index, value) {
     const qty = parseInt(value);
     
-    if (qty < 1) {
+    if (qty < 1 || isNaN(qty)) {
         removeFromPurchaseCart(index);
         return;
     }
@@ -494,7 +693,6 @@ function updatePurchaseQty(index, value) {
     renderPurchaseCart();
 }
 
-// ================= REMOVE FROM CART ================= 
 function removeFromPurchaseCart(index) {
     Swal.fire({
         title: 'Hapus Item?',
@@ -520,7 +718,6 @@ function removeFromPurchaseCart(index) {
     });
 }
 
-// ================= CLEAR CART ================= 
 function clearPurchaseCart() {
     if (purchaseCart.length === 0) {
         Swal.fire({
@@ -557,11 +754,9 @@ function clearPurchaseCart() {
     });
 }
 
-// ================= SUBMIT FORM ================= 
 document.getElementById('purchase-form').addEventListener('submit', function (e) {
     e.preventDefault();
 
-    // Validasi cart tidak kosong
     if (purchaseCart.length === 0) {
         Swal.fire({
             icon: 'warning',
@@ -573,17 +768,14 @@ document.getElementById('purchase-form').addEventListener('submit', function (e)
         return;
     }
 
-    // PERUBAHAN: Tidak perlu validasi tanggal karena menggunakan waktu otomatis
-    // Waktu akan di-set di backend menggunakan Carbon::now('Asia/Jakarta')
-
-    // Konfirmasi sebelum submit
     const currentTime = new Date().toLocaleString('id-ID', { 
         timeZone: 'Asia/Jakarta',
         year: 'numeric',
         month: 'long',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        second: '2-digit'
     });
 
     Swal.fire({
@@ -591,7 +783,7 @@ document.getElementById('purchase-form').addEventListener('submit', function (e)
         html: `
             <div style="text-align: left; padding: 10px;">
                 <p><strong>Waktu Transaksi:</strong> ${currentTime} WIB</p>
-                <p><strong>Total Pembelian:</strong> Rp ${totalBiaya.toLocaleString('id-ID')}</p>
+                <p><strong>Total Pembelian:</strong> Rp ${formatRupiah(totalBiaya.toString())}</p>
                 <p><strong>Jumlah Item:</strong> ${purchaseCart.length} produk</p>
             </div>
         `,
@@ -607,7 +799,6 @@ document.getElementById('purchase-form').addEventListener('submit', function (e)
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Menyimpan...';
 
-            // PERUBAHAN: Tidak kirim tanggal_pembelian, akan di-set otomatis di backend
             return fetch("{{ route('purchase.store') }}", {
                 method: "POST",
                 headers: {
@@ -618,7 +809,6 @@ document.getElementById('purchase-form').addEventListener('submit', function (e)
                 body: JSON.stringify({
                     total_pembelian: totalBiaya,
                     items: purchaseCart
-                    // tanggal_pembelian TIDAK dikirim, akan otomatis di backend
                 })
             })
             .then(response => {
@@ -646,18 +836,17 @@ document.getElementById('purchase-form').addEventListener('submit', function (e)
                     title: 'Pembelian Berhasil!',
                     html: `
                         <div style="text-align: left; padding: 10px;">
-                            <p><strong>Total Pembelian:</strong> Rp ${totalBiaya.toLocaleString('id-ID')}</p>
+                            <p><strong>ID Pembelian:</strong> ${response.data?.id_pembelian || '-'}</p>
+                            <p><strong>Total Pembelian:</strong> Rp ${formatRupiah(totalBiaya.toString())}</p>
                             <p>Data pembelian berhasil disimpan</p>
                         </div>
                     `,
                     confirmButtonText: 'OK',
                     confirmButtonColor: '#10b981'
                 }).then(() => {
-                    // Reset form dan cart
                     purchaseCart = [];
                     renderPurchaseCart();
                     
-                    // Redirect atau reload halaman
                     if (response.redirect) {
                         window.location.href = response.redirect;
                     } else {
@@ -672,39 +861,19 @@ document.getElementById('purchase-form').addEventListener('submit', function (e)
                     timer: 2000,
                     showConfirmButton: false
                 });
+                
+                const submitBtn = document.querySelector('#btnCheckout');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Selesaikan Pembelian';
             }
+        } else {
+            const submitBtn = document.querySelector('#btnCheckout');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Selesaikan Pembelian';
         }
     });
 });
 </script>
-
-<style>
-/* Style untuk display waktu transaksi */
-.transaction-time-display {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 16px;
-    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-    border-left: 4px solid #3b82f6;
-    border-radius: 8px;
-    font-weight: 600;
-    color: #1e40af;
-    margin-top: 8px;
-}
-
-.transaction-time-display i {
-    font-size: 20px;
-    color: #3b82f6;
-}
-
-.text-muted {
-    color: #6b7280;
-    font-size: 12px;
-    display: block;
-    margin-top: 8px;
-}
-</style>
 
 </body>
 </html>

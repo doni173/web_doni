@@ -8,89 +8,102 @@ use App\Models\Item;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class PurchaseController extends Controller
 {
-    public function index()
+    /**
+     * Display purchase history
+     */
+    public function history(Request $request)
     {
-        $items = Item::with('supplier')->orderBy('nama_produk', 'asc')->get();
-        $suppliers = Supplier::orderBy('nama_supplier', 'asc')->get();
-        
-        return view('purchase', compact('items', 'suppliers'));
+        $query = Purchase::with(['supplier']);
+
+        // Search functionality
+        if ($request->has('q') && $request->q != '') {
+            $searchTerm = $request->q;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('id_pembelian', 'like', "%{$searchTerm}%")
+                  ->orWhereHas('supplier', function($q) use ($searchTerm) {
+                      $q->where('nama_supplier', 'like', "%{$searchTerm}%");
+                  });
+            });
+        }
+
+        // Date filter
+        if ($request->has('tanggal') && $request->tanggal != '') {
+            $query->whereDate('tgl_pembelian', $request->tanggal);
+        }
+
+        $purchases = $query->orderBy('tgl_pembelian', 'desc')->paginate(15);
+
+        return view('purchase_history', compact('purchases'));
     }
 
+    /**
+     * Display purchase detail
+     * PENTING: Harus menggunakan eager loading untuk relasi produk!
+     */
+    public function show($id)
+    {
+        // CRITICAL: Load semua relasi dengan eager loading
+        $purchase = Purchase::with([
+            'supplier',
+            'purchaseDetails.produk',      // Load relasi produk dari purchase details
+            'purchaseDetails.supplier'      // Load relasi supplier dari purchase details
+        ])->findOrFail($id);
+
+        return view('purchase_detail_history', compact('purchase'));
+    }
+
+    /**
+     * Store new purchase
+     */
     public function store(Request $request)
     {
         try {
-            Log::info('Purchase Store Request:', $request->all());
+            DB::beginTransaction();
 
+            // Validasi
             $validated = $request->validate([
                 'total_pembelian' => 'required|numeric|min:0',
                 'items' => 'required|array|min:1',
-                'items.*.id' => 'required|string',
-                'items.*.nama' => 'required|string',
-                'items.*.supplier_id' => 'required|string',
+                'items.*.id' => 'required',
+                'items.*.nama' => 'required',
+                'items.*.supplier_id' => 'required',
                 'items.*.stok_lama' => 'required|integer|min:0',
                 'items.*.jumlah_beli' => 'required|integer|min:1',
                 'items.*.harga' => 'required|numeric|min:0',
-            ], [
-                'items.required' => 'Keranjang pembelian tidak boleh kosong!',
-                'items.min' => 'Minimal harus ada 1 item dalam keranjang!',
-                'total_pembelian.required' => 'Total pembelian harus diisi!',
-                'total_pembelian.min' => 'Total pembelian tidak boleh negatif!',
             ]);
 
-            DB::beginTransaction();
-
-            foreach ($validated['items'] as $item) {
-                $produk = Item::find($item['id']);
-                
-                if (!$produk) {
-                    DB::rollBack();
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Produk tidak ditemukan!'
-                    ], 404);
-                }
-            }
-
+            // Generate ID Pembelian
             $lastPurchase = Purchase::orderBy('id_pembelian', 'desc')->first();
             $lastNumber = $lastPurchase ? intval(substr($lastPurchase->id_pembelian, 1)) : 0;
-            $idPembelian = 'P' . str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+            $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+            $idPembelian = 'P' . $newNumber;
 
-            // PERBAIKAN DI SINI - Gunakan format yang eksplisit
-            $tanggalPembelian = Carbon::now('Asia/Jakarta');
-            $idSupplierUtama = $validated['items'][0]['supplier_id'];
+            // Ambil supplier dari item pertama (asumsi semua item dari supplier yang sama)
+            $firstItem = $validated['items'][0];
+            $supplierId = $firstItem['supplier_id'];
 
-            // Log untuk debugging
-            Log::info('Tanggal Pembelian:', [
-                'raw' => $tanggalPembelian,
-                'formatted' => $tanggalPembelian->format('Y-m-d H:i:s'),
-                'timezone' => $tanggalPembelian->timezone->getName()
-            ]);
-
-            // GUNAKAN DB::table() untuk insert dengan format eksplisit
-            DB::table('purchases')->insert([
+            // Create Purchase
+            $purchase = Purchase::create([
                 'id_pembelian' => $idPembelian,
-                'id_user' => Auth::id() ?? 'US001',
-                'id_supplier' => $idSupplierUtama,
-                'tgl_pembelian' => $tanggalPembelian->format('Y-m-d H:i:s'), // Format eksplisit
-                'total_pembelian' => $validated['total_pembelian'],
-                'created_at' => now(),
-                'updated_at' => now(),
+                'tgl_pembelian' => Carbon::now('Asia/Jakarta'),
+                'id_supplier' => $supplierId,
+                'total_pembelian' => $validated['total_pembelian']
             ]);
 
+            // Create Purchase Details dan Update Stok
             foreach ($validated['items'] as $index => $item) {
-                $lastDetail = PurchaseDetail::orderBy('id_detail_pembelian', 'desc')->first();
-                $lastDetailNumber = $lastDetail ? intval(substr($lastDetail->id_detail_pembelian, 2)) : 0;
-                $idDetail = 'DP' . str_pad($lastDetailNumber + 1, 4, '0', STR_PAD_LEFT);
+                // Generate ID Detail
+                $detailNumber = str_pad($index + 1, 4, '0', STR_PAD_LEFT);
+                $idDetail = $idPembelian . '-' . $detailNumber;
 
                 $stokBaru = $item['stok_lama'] + $item['jumlah_beli'];
                 $subtotal = $item['jumlah_beli'] * $item['harga'];
 
+                // Create Purchase Detail
                 PurchaseDetail::create([
                     'id_detail_pembelian' => $idDetail,
                     'id_pembelian' => $idPembelian,
@@ -100,49 +113,27 @@ class PurchaseController extends Controller
                     'jumlah_beli' => $item['jumlah_beli'],
                     'stok_baru' => $stokBaru,
                     'harga_beli' => $item['harga'],
-                    'subtotal' => $subtotal,
+                    'subtotal' => $subtotal
                 ]);
 
-                $produk = Item::find($item['id']);
-                if ($produk) {
-                    $produk->stok = $stokBaru;
-                    $produk->modal = $item['harga'];
-                    $produk->save();
-                }
+                // Update Stok Produk
+                Item::where('id_produk', $item['id'])->increment('stok', $item['jumlah_beli']);
             }
 
             DB::commit();
 
-            Log::info('Pembelian berhasil disimpan:', [
-                'id' => $idPembelian,
-                'waktu' => $tanggalPembelian->format('Y-m-d H:i:s')
-            ]);
-
             return response()->json([
                 'success' => true,
-                'message' => 'Pembelian berhasil disimpan!',
+                'message' => 'Pembelian berhasil disimpan',
                 'data' => [
-                    'id_pembelian' => $idPembelian,
-                    'total_pembelian' => $validated['total_pembelian'],
-                    'tanggal_pembelian' => $tanggalPembelian->format('d F Y H:i:s'),
+                    'id_pembelian' => $idPembelian
                 ],
-                'redirect' => route('purchase.index')
-            ], 201);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            DB::rollBack();
-            Log::error('Validation Error:', $e->errors());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Data tidak valid!',
-                'errors' => $e->errors()
-            ], 422);
+                'redirect' => route('purchase.history')
+            ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Transaction Error: ' . $e->getMessage());
-
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menyimpan pembelian: ' . $e->getMessage()
@@ -150,26 +141,51 @@ class PurchaseController extends Controller
         }
     }
 
-    public function history(Request $request)
+    /**
+     * Show purchase form
+     */
+    public function index()
     {
-        $tanggal = $request->query('tanggal');
-
-        $purchases = Purchase::with(['user', 'supplier'])
-                    ->when($tanggal, function ($query) use ($tanggal) {
-                        return $query->whereDate('tgl_pembelian', $tanggal);
-                    })
-                    ->orderBy('tgl_pembelian', 'desc')
-                    ->orderBy('created_at', 'desc')
-                    ->paginate(20);
-
-        return view('purchase_history', compact('purchases'));
+        $items = Item::with('supplier')->where('stok', '>=', 0)->get();
+        $suppliers = Supplier::all();
+        
+        return view('purchase.index', compact('items', 'suppliers'));
     }
 
-    public function show($id)
+    /**
+     * Delete purchase transaction
+     * PENTING: Stok harus dikurangi kembali sesuai jumlah pembelian
+     */
+    public function destroy($id)
     {
-        $purchase = Purchase::with(['user', 'supplier', 'purchaseDetails.produk', 'purchaseDetails.supplier'])
-                    ->findOrFail($id);
+        try {
+            DB::beginTransaction();
 
-        return view('purchase_detail_history', compact('purchase'));
+            // Load purchase dengan details
+            $purchase = Purchase::with('purchaseDetails')->findOrFail($id);
+
+            // Kurangi stok produk sesuai jumlah pembelian
+            foreach ($purchase->purchaseDetails as $detail) {
+                Item::where('id_produk', $detail->id_produk)
+                    ->decrement('stok', $detail->jumlah_beli);
+            }
+
+            // Hapus purchase details
+            PurchaseDetail::where('id_pembelian', $id)->delete();
+
+            // Hapus purchase
+            $purchase->delete();
+
+            DB::commit();
+
+            return redirect()->route('purchase.history')
+                ->with('success', 'Transaksi pembelian berhasil dihapus dan stok telah dikurangi kembali');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return redirect()->route('purchase.history')
+                ->with('error', 'Gagal menghapus transaksi: ' . $e->getMessage());
+        }
     }
 }

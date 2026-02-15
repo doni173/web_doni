@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detail Penjualan | Sistem Inventory dan Kasir</title>
+    <title>Detail Pembelian | Sistem Inventory dan Kasir</title>
     <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -18,12 +18,11 @@
     <div class="main-container">
         <div class="main-content">
 
-            <!-- HEADER -->
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
                 <div>
-                    <h2 style="margin:0 0 8px 0;">Detail Transaksi Penjualan</h2>
+                    <h2 style="margin:0 0 8px 0;">Detail Transaksi Pembelian</h2>
                     <p style="margin:0;color:var(--text-secondary);font-size:14px;">
-                        ID Penjualan: <strong style="color:var(--text-primary);">{{ $sale->id_penjualan }}</strong>
+                        ID Pembelian: <strong style="color:var(--text-primary);">{{ $purchase->id_pembelian }}</strong>
                     </p>
                 </div>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -34,169 +33,146 @@
                 </div>
             </div>
 
-            <!-- INFO CARD GRADIENT - DIUBAH KE BIRU -->
             <div style="background:linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);color:white;padding:24px;border-radius:12px;margin-bottom:24px;box-shadow:0 4px 12px rgba(14, 165, 233, 0.3);">
                 <h3 style="margin:0 0 20px 0;font-size:18px;font-weight:700;color:white;">
                     <i class="bi bi-info-circle"></i> Informasi Transaksi
                 </h3>
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;">
                     <div style="background:rgba(255,255,255,0.15);padding:16px;border-radius:8px;backdrop-filter:blur(10px);">
-                        <div style="font-size:13px;margin-bottom:8px;opacity:0.9;"><i class="bi bi-calendar3"></i> Tanggal Transaksi</div>
-                        <div style="font-size:18px;font-weight:700;">{{ \Carbon\Carbon::parse($sale->tanggal_transaksi)->timezone('Asia/Jakarta')->format('d F Y, H:i') }}</div>
+                        <div style="font-size:13px;margin-bottom:8px;opacity:0.9;"><i class="bi bi-calendar3"></i> Tanggal Pembelian</div>
+                        <div style="font-size:18px;font-weight:700;">{{ \Carbon\Carbon::parse($purchase->tgl_pembelian)->timezone('Asia/Jakarta')->format('d F Y, H:i') }}</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.15);padding:16px;border-radius:8px;backdrop-filter:blur(10px);">
-                        <div style="font-size:13px;margin-bottom:8px;opacity:0.9;"><i class="bi bi-person-badge"></i> Kasir</div>
-                        <div style="font-size:18px;font-weight:700;">{{ $sale->user->nama_user ?? '-' }}</div>
+                        <div style="font-size:13px;margin-bottom:8px;opacity:0.9;"><i class="bi bi-truck"></i> Supplier</div>
+                        <div style="font-size:18px;font-weight:700;">{{ $purchase->supplier->nama_supplier ?? '-' }}</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.15);padding:16px;border-radius:8px;backdrop-filter:blur(10px);">
-                        <div style="font-size:13px;margin-bottom:8px;opacity:0.9;"><i class="bi bi-person"></i> Customer</div>
-                        <div style="font-size:18px;font-weight:700;">{{ $sale->customer->nama_pelanggan ?? '-' }}</div>
+                        <div style="font-size:13px;margin-bottom:8px;opacity:0.9;"><i class="bi bi-box-seam"></i> Jumlah Item</div>
+                        <div style="font-size:18px;font-weight:700;">{{ $purchase->purchaseDetails->count() }} produk</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.15);padding:16px;border-radius:8px;backdrop-filter:blur(10px);">
-                        <div style="font-size:13px;margin-bottom:8px;opacity:0.9;"><i class="bi bi-cash-stack"></i> Total Belanja</div>
-                        <div style="font-size:20px;font-weight:700;">Rp {{ number_format($sale->total_belanja, 0, ',', '.') }}</div>
+                        <div style="font-size:13px;margin-bottom:8px;opacity:0.9;"><i class="bi bi-cash-stack"></i> Total Pembelian</div>
+                        <div style="font-size:20px;font-weight:700;">Rp {{ number_format($purchase->total_pembelian, 0, ',', '.') }}</div>
                     </div>
                 </div>
             </div>
 
-            <!-- SECTION TITLE -->
             <h3 style="margin:0 0 16px 0;font-size:18px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
-                <i class="bi bi-bag-check" style="color:var(--primary-color);"></i> Detail Produk/Service
+                <i class="bi bi-bag-check" style="color:var(--primary-color);"></i> Detail Produk
             </h3>
 
-            <!-- TABLE -->
             <div class="table-responsive">
                 <table class="table-main">
                     <thead>
                         <tr>
                             <th>No</th>
-                            <th>Nama Produk/Service</th>
-                            <th>Tipe</th>
-                            <th>Jumlah</th>
-                            <th>Diskon</th>
-                            <th>Harga Setelah Diskon</th>
-                            <th>Total</th>
+                            <th>ID Produk</th>
+                            <th>Nama Produk</th>
+                            <th>Supplier</th>
+                            <th>Stok Lama</th>
+                            <th>Jumlah Beli</th>
+                            <th>Stok Baru</th>
+                            <th>Harga Beli</th>
+                            <th>Subtotal</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @php $no = 1; @endphp
-                        @foreach($sale->saleDetails as $detail)
+                        @foreach ($purchase->purchaseDetails as $index => $detail)
                         <tr>
-                            <td data-label="No">{{ $no++ }}</td>
-                            <td data-label="Nama Produk/Service">
-                                <span class="product-name">
-                                    @if($detail->id_produk)
-                                        {{ $detail->produk->nama_produk ?? 'Produk Tidak Ditemukan' }}
-                                    @else
-                                        {{ $detail->service->service ?? 'Service Tidak Ditemukan' }}
-                                    @endif
-                                </span>
+                            <td data-label="No">{{ $index + 1 }}</td>
+                            <td data-label="ID Produk">
+                                <span class="id-badge">{{ $detail->id_produk }}</span>
                             </td>
-                            <td data-label="Tipe">
-                                @if($detail->id_produk)
-                                    <span class="badge badge-info">Produk</span>
-                                @else
-                                    <span class="badge badge-success">Service</span>
-                                @endif
+                            <td data-label="Nama Produk">
+                                <span class="product-name">{{ $detail->produk->nama_produk ?? 'Produk Tidak Ditemukan' }}</span>
                             </td>
-                            <td data-label="Jumlah"><span class="stock-number">{{ $detail->jumlah }}</span></td>
-                            <td data-label="Diskon">{{ $detail->diskon }}%</td>
-                            <td data-label="Harga Setelah Diskon">Rp {{ number_format($detail->harga_setelah_diskon, 0, ',', '.') }}</td>
-                            <td data-label="Total"><strong>Rp {{ number_format($detail->harga_setelah_diskon * $detail->jumlah, 0, ',', '.') }}</strong></td>
+                            <td data-label="Supplier">
+                                <span class="product-name">{{ $detail->supplier->nama_supplier ?? '-' }}</span>
+                            </td>
+                            <td data-label="Stok Lama">
+                                <span class="stock-number">{{ $detail->stok_lama }}</span>
+                            </td>
+                            <td data-label="Jumlah Beli">
+                                <span class="badge badge-info">+{{ $detail->jumlah_beli }}</span>
+                            </td>
+                            <td data-label="Stok Baru">
+                                <strong style="color:#10b981;font-weight:700;">{{ $detail->stok_baru }}</strong>
+                            </td>
+                            <td data-label="Harga Beli">Rp {{ number_format($detail->harga_beli, 0, ',', '.') }}</td>
+                            <td data-label="Subtotal">
+                                <strong>Rp {{ number_format($detail->subtotal, 0, ',', '.') }}</strong>
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
 
-            <!-- SUMMARY CARD -->
             <div style="background:white;padding:24px;border-radius:12px;margin-top:24px;border:2px solid var(--gray-200);box-shadow:var(--shadow-sm);max-width:500px;margin-left:auto;">
                 <h3 style="margin:0 0 20px 0;font-size:18px;font-weight:700;color:var(--text-primary);border-bottom:2px solid var(--primary-color);padding-bottom:10px;">
-                    <i class="bi bi-calculator"></i> Ringkasan Pembayaran
+                    <i class="bi bi-calculator"></i> Ringkasan Pembelian
                 </h3>
                 <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--gray-200);">
-                    <span style="font-size:15px;font-weight:600;color:var(--text-secondary);">Total Belanja:</span>
-                    <span style="font-size:18px;font-weight:700;color:var(--text-primary);">Rp {{ number_format($sale->total_belanja, 0, ',', '.') }}</span>
+                    <span style="font-size:15px;font-weight:600;color:var(--text-secondary);">Jumlah Item:</span>
+                    <span style="font-size:18px;font-weight:700;color:var(--text-primary);">{{ $purchase->purchaseDetails->count() }} produk</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--gray-200);">
-                    <span style="font-size:15px;font-weight:600;color:var(--text-secondary);">Jumlah Bayar:</span>
-                    <span style="font-size:18px;font-weight:700;color:var(--text-primary);">Rp {{ number_format($sale->jumlah_bayar, 0, ',', '.') }}</span>
+                    <span style="font-size:15px;font-weight:600;color:var(--text-secondary);">Total Unit Beli:</span>
+                    <span style="font-size:18px;font-weight:700;color:var(--text-primary);">{{ $purchase->purchaseDetails->sum('jumlah_beli') }} unit</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;padding:16px 0;border-top:2px solid var(--gray-300);margin-top:8px;">
-                    <span style="font-size:16px;font-weight:700;color:var(--text-secondary);">Kembalian:</span>
-                    <span style="font-size:22px;font-weight:700;color:#10b981;">Rp {{ number_format($sale->kembalian, 0, ',', '.') }}</span>
+                    <span style="font-size:16px;font-weight:700;color:var(--text-secondary);">Total Pembelian:</span>
+                    <span style="font-size:22px;font-weight:700;color:var(--primary-color);">Rp {{ number_format($purchase->total_pembelian, 0, ',', '.') }}</span>
                 </div>
             </div>
 
         </div>
     </div>
 
-    {{-- ================================================================
-         NOTA PRINT
-         Tersembunyi di layar. Hanya muncul saat window.print() dipanggil.
-         ================================================================ --}}
     <div class="nota-print">
-
-        {{-- KOP --}}
         <div class="nota-kop">
             <div class="nota-toko-nama">DTC Multimedia</div>
             <div class="nota-toko-sub">Sistem Inventory &amp; Kasir</div>
             <div class="nota-dash"></div>
-            <div class="nota-judul">*** NOTA PENJUALAN ***</div>
+            <div class="nota-judul">*** NOTA PEMBELIAN ***</div>
         </div>
 
-        {{-- INFO TRANSAKSI --}}
         <table class="nota-info-tbl">
             <tr>
                 <td class="nik">No. Nota</td>
                 <td class="sep">:</td>
-                <td>#{{ $sale->id_penjualan }}</td>
+                <td>#{{ $purchase->id_pembelian }}</td>
             </tr>
             <tr>
                 <td class="nik">Tanggal</td>
                 <td class="sep">:</td>
-                <td>{{ \Carbon\Carbon::parse($sale->tanggal_transaksi)->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
+                <td>{{ \Carbon\Carbon::parse($purchase->tgl_pembelian)->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
             </tr>
             <tr>
-                <td class="nik">Kasir</td>
+                <td class="nik">Supplier</td>
                 <td class="sep">:</td>
-                <td>{{ $sale->user->nama_user ?? '-' }}</td>
-            </tr>
-            <tr>
-                <td class="nik">Customer</td>
-                <td class="sep">:</td>
-                <td>{{ $sale->customer->nama_pelanggan ?? 'Umum' }}</td>
+                <td>{{ $purchase->supplier->nama_supplier ?? '-' }}</td>
             </tr>
         </table>
 
         <div class="nota-dash"></div>
 
-        {{-- TABEL ITEM --}}
         <table class="nota-item-tbl">
             <thead>
                 <tr>
-                    <th class="col-nama">Item</th>
+                    <th class="col-nama">Produk</th>
                     <th class="col-qty">Qty</th>
                     <th class="col-harga">Harga</th>
                     <th class="col-total">Total</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($sale->saleDetails as $detail)
+                @foreach ($purchase->purchaseDetails as $detail)
                 <tr>
-                    <td class="col-nama">
-                        @if($detail->id_produk)
-                            {{ $detail->produk->nama_produk ?? 'Produk Tidak Ditemukan' }}
-                        @else
-                            {{ $detail->service->service ?? 'Service Tidak Ditemukan' }}
-                        @endif
-                        @if($detail->diskon > 0)
-                            <br><span class="nota-diskon-label">disc {{ $detail->diskon }}%</span>
-                        @endif
-                    </td>
-                    <td class="col-qty">{{ $detail->jumlah }}</td>
-                    <td class="col-harga">{{ number_format($detail->harga_setelah_diskon, 0, ',', '.') }}</td>
-                    <td class="col-total">{{ number_format($detail->harga_setelah_diskon * $detail->jumlah, 0, ',', '.') }}</td>
+                    <td class="col-nama">{{ $detail->produk->nama_produk ?? 'Produk #' . $detail->id_produk }}</td>
+                    <td class="col-qty">{{ $detail->jumlah_beli }}</td>
+                    <td class="col-harga">{{ number_format($detail->harga_beli, 0, ',', '.') }}</td>
+                    <td class="col-total">{{ number_format($detail->subtotal, 0, ',', '.') }}</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -204,39 +180,36 @@
 
         <div class="nota-dash"></div>
 
-        {{-- RINGKASAN --}}
         <table class="nota-summary-tbl">
             <tr>
-                <td class="skey">Total Belanja</td>
+                <td class="skey">Total Item</td>
                 <td class="ssep">:</td>
-                <td class="sval">Rp {{ number_format($sale->total_belanja, 0, ',', '.') }}</td>
+                <td class="sval">{{ $purchase->purchaseDetails->count() }} produk</td>
             </tr>
             <tr>
-                <td class="skey">Bayar</td>
+                <td class="skey">Total Unit</td>
                 <td class="ssep">:</td>
-                <td class="sval">Rp {{ number_format($sale->jumlah_bayar, 0, ',', '.') }}</td>
+                <td class="sval">{{ $purchase->purchaseDetails->sum('jumlah_beli') }} unit</td>
             </tr>
         </table>
         <div class="nota-dash nota-dash-sm"></div>
-        <table class="nota-summary-tbl nota-kembali-row">
+        <table class="nota-summary-tbl nota-total-row">
             <tr>
-                <td class="skey">Kembali</td>
+                <td class="skey">TOTAL</td>
                 <td class="ssep">:</td>
-                <td class="sval">Rp {{ number_format($sale->kembalian, 0, ',', '.') }}</td>
+                <td class="sval">Rp {{ number_format($purchase->total_pembelian, 0, ',', '.') }}</td>
             </tr>
         </table>
 
         <div class="nota-dash"></div>
 
-        {{-- FOOTER --}}
         <div class="nota-footer">
-            <p>Terima kasih atas kunjungan Anda!</p>
+            <p>Dokumen sah sebagai bukti pembelian</p>
             <p>Barang yang sudah dibeli tidak</p>
             <p>dapat dikembalikan.</p>
-            <p class="nota-footer-ts">{{ \Carbon\Carbon::parse($sale->tanggal_transaksi)->timezone('Asia/Jakarta')->format('d/m/Y H:i:s') }}</p>
+            <p class="nota-footer-ts">{{ \Carbon\Carbon::parse($purchase->tgl_pembelian)->timezone('Asia/Jakarta')->format('d/m/Y H:i:s') }}</p>
         </div>
-
-    </div>{{-- end .nota-print --}}
+    </div>
 
     <script>
         function toggleSidebar() {
@@ -246,14 +219,9 @@
     </script>
 
     <style>
-        /* ================================
-           NOTA PRINT
-           ================================ */
         .nota-print { display: none; }
 
         @media print {
-
-            /* Sembunyikan seluruh halaman layar */
             body > *:not(.nota-print) { display: none !important; }
             .main-container,
             .navbar-container,
@@ -265,7 +233,6 @@
                 margin: 0; padding: 0;
             }
 
-            /* Tampilkan nota */
             .nota-print {
                 display: block !important;
                 width: 72mm;
@@ -277,7 +244,6 @@
                 background: white;
             }
 
-            /* KOP */
             .nota-kop { text-align: center; margin-bottom: 4px; }
             .nota-toko-nama {
                 font-size: 15pt;
@@ -297,7 +263,6 @@
                 margin-top: 2px;
             }
 
-            /* GARIS PUTUS */
             .nota-dash {
                 border: none;
                 border-top: 1px dashed #000;
@@ -305,7 +270,6 @@
             }
             .nota-dash-sm { margin: 3px 0; }
 
-            /* INFO TRANSAKSI */
             .nota-info-tbl {
                 width: 100%;
                 border-collapse: collapse;
@@ -316,7 +280,6 @@
             .nota-info-tbl .nik { width: 52px; }
             .nota-info-tbl .sep { width: 8px; text-align: center; }
 
-            /* TABEL ITEM */
             .nota-item-tbl {
                 width: 100%;
                 border-collapse: collapse;
@@ -342,19 +305,11 @@
                 border-bottom: none;
             }
 
-            /* Lebar kolom item */
             .col-nama  { width: 44%; }
             .col-qty   { width: 10%; text-align: center; }
             .col-harga { width: 23%; text-align: right; }
             .col-total { width: 23%; text-align: right; }
 
-            .nota-diskon-label {
-                font-size: 8.5pt;
-                font-style: italic;
-                color: #555;
-            }
-
-            /* RINGKASAN */
             .nota-summary-tbl {
                 width: 100%;
                 border-collapse: collapse;
@@ -366,13 +321,12 @@
             .nota-summary-tbl .ssep { width: 10px; text-align: center; }
             .nota-summary-tbl .sval { text-align: right; font-weight: 600; }
 
-            .nota-kembali-row {
+            .nota-total-row {
                 font-size: 13pt;
                 font-weight: 900;
             }
-            .nota-kembali-row .sval { font-weight: 900; }
+            .nota-total-row .sval { font-weight: 900; }
 
-            /* FOOTER */
             .nota-footer {
                 text-align: center;
                 font-size: 9.5pt;

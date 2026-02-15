@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | Sistem Inventory dan Kasir</title>
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
 </head>
 

@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>History Penjualan | Sistem Inventory dan Kasir</title>
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
 </head>
 <body>
     @include('layouts.navbar')
@@ -69,7 +69,7 @@
                     <thead>
                         <tr>
                             <th>ID Penjualan</th>
-                            <th>Tanggal</th>
+                            <th>Tanggal & Waktu</th>
                             <th>Kasir</th>
                             <th>Customer</th>
                             <th>Total Belanja</th>
@@ -84,9 +84,11 @@
                             <td data-label="ID Penjualan">
                                 <span class="id-badge">{{ $sale->id_penjualan }}</span>
                             </td>
-                            <td data-label="Tanggal">{{ \Carbon\Carbon::parse($sale->tanggal_transaksi)->format('d/m/Y H:i') }}</td>
+                            <td data-label="Tanggal & Waktu">
+                                {{ \Carbon\Carbon::parse($sale->tanggal_transaksi)->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}
+                            </td>
                             <td data-label="Kasir">
-                                <span class="product-name">{{ $sale->user->name ?? $sale->id_user }}</span>
+                                <span class="product-name">{{ $sale->user->nama_user ?? '-' }}</span>
                             </td>
                             <td data-label="Customer">
                                 <span class="product-name">{{ $sale->customer->nama_pelanggan ?? '-' }}</span>
@@ -100,13 +102,11 @@
                             </td>
                             <td data-label="Aksi">
                                 <div class="action-buttons">
-                                    {{-- Tombol Lihat Detail (untuk semua role) --}}
                                     <a href="{{ route('sale.show', $sale->id_penjualan) }}" class="btn-info" title="Lihat Detail">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    {{-- Tombol Hapus (HANYA untuk Admin) --}}
                                     @if(Auth::check() && Auth::user()->role === 'admin')
-                                    <form action="{{ route('sale.destroy', $sale->id_penjualan) }}" method="POST" style="display: inline-block;" onsubmit="return confirmDelete(event)">
+                                    <form action="{{ route('sale.destroy', $sale->id_penjualan) }}" method="POST" style="display: inline-block;" onsubmit="return confirmDelete(event, this)">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn-danger" title="Hapus Transaksi">
@@ -131,7 +131,6 @@
                 </table>
             </div>
 
-            <!-- Pagination -->
             @if(isset($sales) && $sales instanceof \Illuminate\Pagination\LengthAwarePaginator && $sales->hasPages())
             <div class="pagination-wrapper">
                 {{ $sales->appends(request()->query())->links() }}
@@ -173,15 +172,7 @@
             document.querySelector('.sidebar-overlay').classList.toggle('active');
         }
 
-        // Function untuk print receipt
-        function printReceipt(idPenjualan) {
-            // Buka halaman print dalam window baru
-            const printUrl = '{{ route("sale.print", ":id") }}'.replace(':id', idPenjualan);
-            window.open(printUrl, '_blank', 'width=800,height=600');
-        }
-
-        // Function untuk konfirmasi delete
-        function confirmDelete(event) {
+        function confirmDelete(event, form) {
             event.preventDefault();
             
             Swal.fire({
@@ -195,7 +186,7 @@
                 cancelButtonText: 'Batal'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    event.target.submit();
+                    form.submit();
                 }
             });
             
@@ -213,44 +204,6 @@
             const tableBody = $('#saleTableBody');
             const filterButton = $('#filterButton');
 
-            // Live Search dengan debounce
-            searchInput.on('input', function() {
-                const query = $(this).val().trim();
-                clearTimeout(searchTimeout);
-
-                // Toggle clear button visibility
-                toggleClearButton();
-
-                // Debounce search
-                searchTimeout = setTimeout(function() {
-                    performSearch(query, dateFilter.val());
-                }, 500);
-            });
-
-            // Date Filter Change
-            dateFilter.on('change', function() {
-                const date = $(this).val();
-                toggleClearButton();
-                performSearch(searchInput.val().trim(), date);
-            });
-
-            // Filter Button Click
-            filterButton.on('click', function() {
-                performSearch(searchInput.val().trim(), dateFilter.val());
-            });
-
-            // Clear Button Click
-            clearButton.on('click', function() {
-                searchInput.val('');
-                dateFilter.val('');
-                clearButton.hide();
-                searchInfo.hide();
-                
-                // Redirect ke halaman tanpa parameter
-                window.location.href = '{{ route("sale.history") }}';
-            });
-
-            // Toggle Clear Button
             function toggleClearButton() {
                 if (searchInput.val().trim() || dateFilter.val()) {
                     clearButton.show();
@@ -259,9 +212,35 @@
                 }
             }
 
-            // Perform Search Function
+            searchInput.on('input', function() {
+                const query = $(this).val().trim();
+                clearTimeout(searchTimeout);
+                toggleClearButton();
+
+                searchTimeout = setTimeout(function() {
+                    performSearch(query, dateFilter.val());
+                }, 500);
+            });
+
+            dateFilter.on('change', function() {
+                const date = $(this).val();
+                toggleClearButton();
+                performSearch(searchInput.val().trim(), date);
+            });
+
+            filterButton.on('click', function() {
+                performSearch(searchInput.val().trim(), dateFilter.val());
+            });
+
+            clearButton.on('click', function() {
+                searchInput.val('');
+                dateFilter.val('');
+                clearButton.hide();
+                searchInfo.hide();
+                window.location.href = '{{ route("sale.history") }}';
+            });
+
             function performSearch(query, date) {
-                // Show loading indicator
                 searchIcon.hide();
                 searchLoading.show();
                 tableBody.addClass('table-loading');
@@ -285,14 +264,12 @@
                                 console.error('Table body not found in response');
                             }
 
-                            // Update search info
                             updateSearchInfo(query, date);
 
                         } catch (error) {
                             console.error('Parse error:', error);
                             showErrorAlert();
                         } finally {
-                            // Hide loading indicator
                             searchLoading.hide();
                             searchIcon.show();
                             tableBody.removeClass('table-loading');
@@ -308,7 +285,6 @@
                 });
             }
 
-            // Update Search Info
             function updateSearchInfo(query, date) {
                 if (query || date) {
                     let infoText = '';
@@ -338,7 +314,6 @@
                 }
             }
 
-            // Escape HTML to prevent XSS
             function escapeHtml(text) {
                 const map = {
                     '&': '&amp;',
@@ -350,7 +325,6 @@
                 return text.replace(/[&<>"']/g, function(m) { return map[m]; });
             }
 
-            // Show Error Alert
             function showErrorAlert() {
                 Swal.fire({
                     icon: 'error',
@@ -361,16 +335,14 @@
                 });
             }
 
-            // Prevent form submission on Enter key
             $('#searchForm').on('submit', function(e) {
                 e.preventDefault();
                 performSearch(searchInput.val().trim(), dateFilter.val());
                 return false;
             });
 
-            // Handle Enter key on search input
             searchInput.on('keypress', function(e) {
-                if (e.which === 13) { // Enter key
+                if (e.which === 13) {
                     e.preventDefault();
                     performSearch($(this).val().trim(), dateFilter.val());
                 }
