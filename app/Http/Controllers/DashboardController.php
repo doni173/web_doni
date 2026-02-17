@@ -32,6 +32,7 @@ class DashboardController extends Controller
         
         // Transaksi Hari Ini
         $transaksiHariIni = Sale::whereDate('tanggal_transaksi', $today)->count();
+
         // Penjualan Hari Ini (Total Rupiah)
         $penjualanHariIni = Sale::whereDate('tanggal_transaksi', $today)
             ->sum('total_belanja') ?? 0;
@@ -39,12 +40,9 @@ class DashboardController extends Controller
         // Keuntungan Hari Ini (Penjualan - Modal)
         $keuntunganHariIni = $this->hitungKeuntunganHariIni($today);
 
-        // Total Barang yang Didiskon Hari Ini
-        $barangDiskonHariIni = SaleDetail::whereHas('sale', function($query) use ($today) {
-                $query->whereDate('tanggal_transaksi', $today);
-            })
-            ->where('diskon', '>', 0)
-            ->sum('jumlah') ?? 0;
+        // ✅ PERBAIKAN: Hitung jumlah produk/item yang aktif memiliki diskon > 0%
+        // Query langsung ke tabel items — otomatis update saat data items berubah
+        $barangDiskonHariIni = Item::where('diskon', '>', 0)->count();
 
         // ========================================
         // DATA GRAFIK PENJUALAN (7 HARI TERAKHIR)
@@ -136,12 +134,9 @@ class DashboardController extends Controller
         // Keuntungan Hari Ini (Penjualan - Modal)
         $keuntunganHariIni = $this->hitungKeuntunganHariIni($today);
 
-        // Total Barang yang Didiskon Hari Ini
-        $barangDiskonHariIni = SaleDetail::whereHas('sale', function($query) use ($today) {
-                $query->whereDate('tanggal_transaksi', $today);
-            })
-            ->where('diskon', '>', 0)
-            ->sum('jumlah') ?? 0;
+        // ✅ PERBAIKAN: Hitung jumlah produk/item yang aktif memiliki diskon > 0%
+        // Query langsung ke tabel items — otomatis update saat data items berubah
+        $barangDiskonHariIni = Item::where('diskon', '>', 0)->count();
 
         // ========================================
         // DATA GRAFIK PENJUALAN (7 HARI TERAKHIR)
@@ -242,13 +237,13 @@ class DashboardController extends Controller
     private function getDayName($date)
     {
         $days = [
-            'Sunday' => 'Min',
-            'Monday' => 'Sen',
-            'Tuesday' => 'Sel',
+            'Sunday'    => 'Min',
+            'Monday'    => 'Sen',
+            'Tuesday'   => 'Sel',
             'Wednesday' => 'Rab',
-            'Thursday' => 'Kam',
-            'Friday' => 'Jum',
-            'Saturday' => 'Sab'
+            'Thursday'  => 'Kam',
+            'Friday'    => 'Jum',
+            'Saturday'  => 'Sab'
         ];
         
         return $days[$date->englishDayOfWeek] ?? $date->format('D');
