@@ -66,14 +66,21 @@ class DashboardController extends Controller
         }
 
         // ========================================
-        // PRODUK PROMO/DISKON
+        // PRODUK NON-MOVING (FSN = N) DENGAN DISKON
         // ========================================
         
-        // Ambil produk dengan stok tinggi yang perlu dipromosikan
-        $promoItems = Item::where('stok', '>', 20)
+        // Ambil produk dengan FSN = N (Non-Moving) yang memiliki diskon
+        $nonMovingItems = Item::where('FSN', 'N')
+            ->where('diskon', '>', 0)
             ->orderBy('stok', 'desc')
-            ->take(5)
-            ->get();
+            ->orderBy('diskon', 'desc')
+            ->take(10)
+            ->get()
+            ->map(function($item) {
+                // Hitung hari tidak terjual (umur barang)
+                $item->days_not_sold = $item->umur_hari;
+                return $item;
+            });
 
         // ========================================
         // TRANSAKSI TERBARU
@@ -92,7 +99,7 @@ class DashboardController extends Controller
             'barangDiskonHariIni',
             'salesData',
             'salesLabels',
-            'promoItems',
+            'nonMovingItems',
             'transaksiTerbaru'
         ));
     }
@@ -156,14 +163,21 @@ class DashboardController extends Controller
         }
 
         // ========================================
-        // PRODUK PROMO/DISKON
+        // PRODUK NON-MOVING (FSN = N) DENGAN DISKON
         // ========================================
         
-        // Ambil produk dengan stok tinggi yang perlu dipromosikan
-        $promoItems = Item::where('stok', '>', 20)
+        // Ambil produk dengan FSN = N (Non-Moving) yang memiliki diskon
+        $nonMovingItems = Item::where('FSN', 'N')
+            ->where('diskon', '>', 0)
             ->orderBy('stok', 'desc')
-            ->take(5)
-            ->get();
+            ->orderBy('diskon', 'desc')
+            ->take(10)
+            ->get()
+            ->map(function($item) {
+                // Hitung hari tidak terjual (umur barang)
+                $item->days_not_sold = $item->umur_hari;
+                return $item;
+            });
 
         // ========================================
         // TRANSAKSI TERBARU
@@ -182,7 +196,7 @@ class DashboardController extends Controller
             'barangDiskonHariIni',
             'salesData',
             'salesLabels',
-            'promoItems',
+            'nonMovingItems',
             'transaksiTerbaru'
         ));
     }

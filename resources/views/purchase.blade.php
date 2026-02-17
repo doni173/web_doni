@@ -135,9 +135,6 @@
                            placeholder="Cari produk..." 
                            id="searchProduct"
                            autocomplete="off">
-                    <span class="search-icon">
-                        <i class="bi bi-search"></i>
-                    </span>
                 </div>
             </div>
 
