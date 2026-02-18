@@ -327,7 +327,8 @@
 
             <div class="form-group">
                 <label>Harga Beli (per unit) <span style="color: #ef4444;">*</span></label>
-                <input type="number" id="modal-product-price" class="form-control" min="0" required>
+                {{-- ✅ Ganti type="number" menjadi type="text" agar bisa diformat --}}
+                <input type="text" id="modal-product-price" class="form-control" required>
             </div>
 
             <div class="modal-footer-custom">
@@ -652,6 +653,11 @@ function changeProductPerPage(val) {
     goToProductPage(1);
 }
 
+// ================= FORMAT RUPIAH =================
+function formatRupiah(angka) {
+    return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 // ================= DATE TIME =================
 
 function updateCurrentDateTime() {
@@ -709,9 +715,18 @@ $(document).ready(function() {
         document.getElementById('modal-product-id').value = b.data('id');
         document.getElementById('modal-product-name').value = b.data('name');
         document.getElementById('modal-current-stock').value = b.data('stock');
-        document.getElementById('modal-product-price').value = b.data('price');
+
+        // ✅ Tampilkan harga dengan format titik: 70.000
+        document.getElementById('modal-product-price').value = formatRupiah(b.data('price').toString());
+
         document.getElementById('modal-purchase-qty').value = 1;
         document.getElementById('modal-supplier-id').value = '';
+    });
+
+    // ✅ Format harga saat user mengetik di input harga
+    $('#modal-product-price').on('input', function() {
+        let raw = this.value.replace(/\./g, '').replace(/\D/g, '');
+        this.value = raw ? formatRupiah(raw) : '';
     });
 
     $('.close, .close-modal').on('click', function() {
@@ -735,9 +750,11 @@ $(document).ready(function() {
 
     $('#add-to-summary-btn').on('click', function() {
         const supplierId = document.getElementById('modal-supplier-id').value;
-        const qty = document.getElementById('modal-purchase-qty').value;
-        const price = document.getElementById('modal-product-price').value;
-        const productId = document.getElementById('modal-product-id').value;
+        const qty        = document.getElementById('modal-purchase-qty').value;
+
+        // ✅ Hapus titik sebelum dihitung agar jadi angka asli
+        const priceRaw   = document.getElementById('modal-product-price').value.replace(/\./g, '');
+        const productId  = document.getElementById('modal-product-id').value;
 
         if (!supplierId) {
             Swal.fire({
@@ -759,7 +776,7 @@ $(document).ready(function() {
             });
             return;
         }
-        if (!price || price < 0) {
+        if (!priceRaw || parseInt(priceRaw) < 0) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Perhatian',
@@ -781,7 +798,7 @@ $(document).ready(function() {
                 supplier_id: supplierId,
                 stok_lama: parseInt(document.getElementById('modal-current-stock').value),
                 jumlah_beli: parseInt(qty),
-                harga: parseInt(price),
+                harga: parseInt(priceRaw), // ✅ simpan angka asli tanpa titik
             };
             purchaseCart.push(item);
         }
@@ -867,10 +884,6 @@ function renderPurchaseCart() {
 
     updateSummary();
     $('#btnCheckout').prop('disabled', false);
-}
-
-function formatRupiah(angka) {
-    return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 function updateSummary() {
@@ -1056,12 +1069,8 @@ document.getElementById('purchase-form').addEventListener('submit', function (e)
                 }).then(() => {
                     purchaseCart = [];
                     renderPurchaseCart();
-                    
-                    if (response.redirect) {
-                        window.location.href = response.redirect;
-                    } else {
-                        window.location.reload();
-                    }
+                    // ✅ Reload halaman pembelian, tidak diarahkan ke history
+                    window.location.reload();
                 });
             } else {
                 Swal.fire({
