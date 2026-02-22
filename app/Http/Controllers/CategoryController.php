@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
@@ -15,9 +16,9 @@ class CategoryController extends Controller
 
         // Query untuk mencari kategori berdasarkan pencarian
         $categories = Category::when($q, function ($query) use ($q) {
-            return $query->where('kategori', 'like', "%{$q}%"); // Menyesuaikan untuk pencarian berdasarkan nama kategori
+            return $query->where('kategori', 'like', "%{$q}%");
         })
-        ->orderBy('id_kategori', 'asc')  // Urutkan berdasarkan Id_Kategori
+        ->orderBy('id_kategori', 'asc')
         ->get();
 
         // Kembalikan view dengan data kategori dan query string
@@ -27,9 +28,18 @@ class CategoryController extends Controller
     // Menyimpan kategori baru
     public function store(Request $request)
     {
-        // Validasi data kategori
+        // Validasi data kategori (termasuk pengecekan duplikat)
         $request->validate([
-            'kategori' => 'required|string|max:50',
+            'kategori' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('categories', 'kategori'),
+            ],
+        ], [
+            'kategori.required' => 'Nama kategori wajib diisi',
+            'kategori.max'      => 'Nama kategori maksimal 50 karakter',
+            'kategori.unique'   => 'Kategori sudah di input',
         ]);
 
         // Menyimpan kategori baru ke database
@@ -39,10 +49,9 @@ class CategoryController extends Controller
 
         Category::create([
             'id_kategori' => $id_kategori,
-            'kategori' => $request->kategori,
+            'kategori'    => $request->kategori,
         ]);
 
-        // Redirect ke halaman kategori dengan pesan sukses
         return redirect()->route('categories.index')->with('success', 'Kategori berhasil ditambahkan');
     }
 
@@ -50,7 +59,16 @@ class CategoryController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'kategori' => 'required|string|max:50',
+            'kategori' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('categories', 'kategori')->ignore($id, 'id_kategori'),
+            ],
+        ], [
+            'kategori.required' => 'Nama kategori wajib diisi',
+            'kategori.max'      => 'Nama kategori maksimal 50 karakter',
+            'kategori.unique'   => 'Kategori sudah di input',
         ]);
 
         $category = Category::findOrFail($id);

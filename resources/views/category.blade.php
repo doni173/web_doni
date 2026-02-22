@@ -223,7 +223,9 @@
         </div>
     </div>
 
+    <!-- ======================================================= -->
     <!-- MODAL: ADD CATEGORY -->
+    <!-- ======================================================= -->
     <div class="modal fade" id="addCategoryModal" tabindex="-1" role="dialog" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -237,15 +239,25 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form action="{{ route('categories.store') }}" method="POST">
+                    {{-- 
+                        PENTING: TIDAK ada atribut "required" di input ini.
+                        Validasi kosong ditangani oleh JavaScript (SweetAlert) di bawah.
+                        Validasi duplikat ditangani oleh Laravel (Controller).
+                    --}}
+                    <form action="{{ route('categories.store') }}" method="POST" id="addCategoryForm">
                         @csrf
                         <div class="form-group">
                             <label for="kategori">Nama Kategori</label>
-                            <input type="text" class="form-control" id="kategori" name="kategori" placeholder="Masukkan nama kategori" required>
+                            <input type="text"
+                                   class="form-control {{ $errors->has('kategori') ? 'is-invalid' : '' }}"
+                                   id="kategori"
+                                   name="kategori"
+                                   placeholder="Masukkan nama kategori"
+                                   value="{{ old('kategori') }}">
                         </div>
                         <div class="modal-footer-custom">
                             <button type="button" class="btn-secondary" data-dismiss="modal">Batal</button>
-                            <button type="submit" class="btn-success">
+                            <button type="submit" class="btn-success" id="btnSimpan">
                                 <i class="bi bi-check-circle"></i>
                                 Simpan
                             </button>
@@ -256,7 +268,9 @@
         </div>
     </div>
 
+    <!-- ======================================================= -->
     <!-- MODAL: EDIT CATEGORY -->
+    <!-- ======================================================= -->
     @foreach($categories as $category)
     <div class="modal fade" id="editCategoryModal{{ $category->id_kategori }}" tabindex="-1" role="dialog" aria-labelledby="editCategoryModalLabel{{ $category->id_kategori }}" aria-hidden="true">
         <div class="modal-dialog" role="document">
@@ -276,7 +290,11 @@
                         @method('PUT')
                         <div class="form-group">
                             <label for="kategori{{ $category->id_kategori }}">Nama Kategori</label>
-                            <input type="text" class="form-control" id="kategori{{ $category->id_kategori }}" name="kategori" value="{{ $category->kategori }}" required>
+                            <input type="text"
+                                   class="form-control"
+                                   id="kategori{{ $category->id_kategori }}"
+                                   name="kategori"
+                                   value="{{ $category->kategori }}">
                         </div>
                         <div class="modal-footer-custom">
                             <button type="button" class="btn-secondary" data-dismiss="modal">Batal</button>
@@ -291,18 +309,6 @@
         </div>
     </div>
     @endforeach
-
-    @if (session('success'))
-    <script>
-        Swal.fire({
-            icon: 'success',
-            title: 'Berhasil',
-            text: '{{ session('success') }}',
-            timer: 2000,
-            showConfirmButton: false
-        })
-    </script>
-    @endif
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
@@ -331,17 +337,74 @@
         }
 
         $(document).ready(function() {
+
+            // ====================================
+            // VALIDASI FORM TAMBAH KATEGORI
+            // Intercept submit → cek kosong dulu via SweetAlert,
+            // baru kirim ke Laravel untuk cek duplikat.
+            // ====================================
+            $('#addCategoryForm').on('submit', function(e) {
+                var nilai = $('#kategori').val().trim();
+
+                // Jika input kosong → tampilkan SweetAlert, JANGAN submit ke server
+                if (nilai === '') {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Menyimpan',
+                        text: 'Kategori tidak boleh kosong',
+                        confirmButtonColor: '#3b82f6',
+                        confirmButtonText: 'OK'
+                    });
+                    return false;
+                }
+
+                // Jika tidak kosong → biarkan form submit ke Laravel (untuk cek duplikat)
+            });
+
+            // ====================================
+            // ALERT: BERHASIL SIMPAN / UPDATE / HAPUS
+            // ====================================
+            @if (session('success'))
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: '{{ session('success') }}',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            @endif
+
+            // ====================================
+            // ALERT: ERROR DARI LARAVEL (misal: duplikat)
+            // Setelah alert, modal Tambah otomatis terbuka kembali.
+            // ====================================
+            @if ($errors->any())
+                var errorMessages = @json($errors->all());
+                var errorText = errorMessages.join('\n');
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Menyimpan',
+                    text: errorText,
+                    confirmButtonColor: '#3b82f6',
+                    confirmButtonText: 'OK'
+                }).then(function() {
+                    $('#addCategoryModal').modal('show');
+                });
+            @endif
+
             // ====================================
             // AJAX SEARCH FUNCTIONALITY
             // ====================================
             let searchTimeout;
-            const searchInput = $('#searchInput');
+            const searchInput   = $('#searchInput');
             const searchLoading = $('#searchLoading');
-            const searchIcon = $('#searchIcon');
-            const clearButton = $('#clearSearch');
-            const searchInfo = $('#searchInfo');
-            const searchTerm = $('#searchTerm');
-            const tableBody = $('#categoryTableBody');
+            const searchIcon    = $('#searchIcon');
+            const clearButton   = $('#clearSearch');
+            const searchInfo    = $('#searchInfo');
+            const searchTerm    = $('#searchTerm');
+            const tableBody     = $('#categoryTableBody');
 
             searchInput.on('input', function() {
                 const query = $(this).val().trim();
@@ -381,7 +444,6 @@
                         
                         if (newTableBody) {
                             tableBody.html(newTableBody.innerHTML);
-                            // Reinitialize pagination after search
                             initPagination();
                         }
 
@@ -418,87 +480,57 @@
             // ====================================
             // PAGINATION FUNCTIONALITY
             // ====================================
-            let currentPage = 1;
+            let currentPage  = 1;
             let itemsPerPage = 20;
-            let allRows = [];
+            let allRows      = [];
 
             function initPagination() {
-                // Get all table rows (exclude empty state row)
                 allRows = Array.from(document.querySelectorAll('#categoryTableBody tr')).filter(row => {
                     return !row.querySelector('.empty-state');
                 });
-                
-                // Update total items
+
                 document.getElementById('totalItems').textContent = allRows.length;
-                
-                // Reset to first page
                 currentPage = 1;
-                
-                // Render pagination
                 renderPagination();
             }
 
             function renderPagination() {
                 const totalPages = Math.ceil(allRows.length / itemsPerPage);
                 const start = (currentPage - 1) * itemsPerPage;
-                const end = start + itemsPerPage;
+                const end   = start + itemsPerPage;
 
-                // Hide all rows
                 allRows.forEach(row => row.style.display = 'none');
+                allRows.slice(start, end).forEach(row => row.style.display = '');
 
-                // Show only current page rows
-                const visibleRows = allRows.slice(start, end);
-                visibleRows.forEach(row => row.style.display = '');
-
-                // Update showing info
                 const actualStart = allRows.length > 0 ? start + 1 : 0;
-                const actualEnd = Math.min(end, allRows.length);
+                const actualEnd   = Math.min(end, allRows.length);
                 document.getElementById('showingStart').textContent = actualStart;
-                document.getElementById('showingEnd').textContent = actualEnd;
+                document.getElementById('showingEnd').textContent   = actualEnd;
 
-                // Update buttons state
                 document.getElementById('firstPage').disabled = currentPage === 1;
-                document.getElementById('prevPage').disabled = currentPage === 1;
-                document.getElementById('nextPage').disabled = currentPage === totalPages || totalPages === 0;
-                document.getElementById('lastPage').disabled = currentPage === totalPages || totalPages === 0;
+                document.getElementById('prevPage').disabled  = currentPage === 1;
+                document.getElementById('nextPage').disabled  = currentPage === totalPages || totalPages === 0;
+                document.getElementById('lastPage').disabled  = currentPage === totalPages || totalPages === 0;
 
-                // Render page numbers
                 renderPageNumbers(totalPages);
             }
 
             function renderPageNumbers(totalPages) {
-                const pageNumbersContainer = document.getElementById('pageNumbers');
-                pageNumbersContainer.innerHTML = '';
+                const container = document.getElementById('pageNumbers');
+                container.innerHTML = '';
 
                 if (totalPages <= 7) {
-                    // Show all pages
-                    for (let i = 1; i <= totalPages; i++) {
-                        pageNumbersContainer.appendChild(createPageButton(i));
-                    }
+                    for (let i = 1; i <= totalPages; i++) container.appendChild(createPageButton(i));
                 } else {
-                    // Show first page
-                    pageNumbersContainer.appendChild(createPageButton(1));
+                    container.appendChild(createPageButton(1));
+                    if (currentPage > 3) container.appendChild(createEllipsis());
 
-                    if (currentPage > 3) {
-                        pageNumbersContainer.appendChild(createEllipsis());
-                    }
-
-                    // Show pages around current page
                     const startPage = Math.max(2, currentPage - 1);
-                    const endPage = Math.min(totalPages - 1, currentPage + 1);
+                    const endPage   = Math.min(totalPages - 1, currentPage + 1);
+                    for (let i = startPage; i <= endPage; i++) container.appendChild(createPageButton(i));
 
-                    for (let i = startPage; i <= endPage; i++) {
-                        pageNumbersContainer.appendChild(createPageButton(i));
-                    }
-
-                    if (currentPage < totalPages - 2) {
-                        pageNumbersContainer.appendChild(createEllipsis());
-                    }
-
-                    // Show last page
-                    if (totalPages > 1) {
-                        pageNumbersContainer.appendChild(createPageButton(totalPages));
-                    }
+                    if (currentPage < totalPages - 2) container.appendChild(createEllipsis());
+                    if (totalPages > 1) container.appendChild(createPageButton(totalPages));
                 }
             }
 
@@ -506,10 +538,7 @@
                 const button = document.createElement('button');
                 button.className = 'pagination-btn' + (pageNum === currentPage ? ' active' : '');
                 button.textContent = pageNum;
-                button.addEventListener('click', () => {
-                    currentPage = pageNum;
-                    renderPagination();
-                });
+                button.addEventListener('click', () => { currentPage = pageNum; renderPagination(); });
                 return button;
             }
 
@@ -520,41 +549,23 @@
                 return span;
             }
 
-            // Event listeners for pagination controls
-            document.getElementById('firstPage').addEventListener('click', () => {
-                currentPage = 1;
-                renderPagination();
-            });
-
-            document.getElementById('prevPage').addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderPagination();
-                }
-            });
-
+            document.getElementById('firstPage').addEventListener('click', () => { currentPage = 1; renderPagination(); });
+            document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPagination(); } });
             document.getElementById('nextPage').addEventListener('click', () => {
                 const totalPages = Math.ceil(allRows.length / itemsPerPage);
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    renderPagination();
-                }
+                if (currentPage < totalPages) { currentPage++; renderPagination(); }
             });
-
             document.getElementById('lastPage').addEventListener('click', () => {
                 const totalPages = Math.ceil(allRows.length / itemsPerPage);
                 currentPage = totalPages;
                 renderPagination();
             });
-
-            // Page size change
             document.getElementById('pageSize').addEventListener('change', function() {
                 itemsPerPage = parseInt(this.value);
-                currentPage = 1;
+                currentPage  = 1;
                 renderPagination();
             });
 
-            // Initialize pagination on page load
             initPagination();
         });
     </script>
