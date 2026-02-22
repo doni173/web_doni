@@ -177,7 +177,7 @@ class FSNCalculationService
     }
 
     /* ===============================
-       ⭐ FUNGSI BARU: UPDATE DISKON BERTINGKAT
+       UPDATE DISKON BERTINGKAT
     ================================ */
     
     /**
