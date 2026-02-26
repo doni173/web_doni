@@ -104,6 +104,84 @@
         }
 
         /* ============================================================
+           FSN LEGEND
+        ============================================================ */
+        .fsn-legend {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 14px;
+            padding: 12px 18px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #374151;
+        }
+
+        .fsn-legend-title {
+            font-weight: 600;
+            color: #111827;
+            margin-right: 4px;
+            white-space: nowrap;
+        }
+
+        .fsn-legend-items {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .fsn-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            white-space: nowrap;
+        }
+
+        .fsn-legend-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .fsn-legend-badge.f {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+
+        .fsn-legend-badge.s {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+
+        .fsn-legend-badge.n {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .fsn-legend-badge.na {
+            background: #e5e7eb;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .fsn-legend-desc {
+            color: #6b7280;
+        }
+
+        /* ============================================================
            RESPONSIVE
         ============================================================ */
         @media (max-width: 768px) {
@@ -115,6 +193,12 @@
             .pagination-controls {
                 flex-wrap: wrap;
                 justify-content: center;
+            }
+
+            .fsn-legend {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
             }
         }
     </style>
@@ -195,7 +279,7 @@
                             <th>Brand</th>
                             <th>Supplier</th>
                             <th>Stok</th>
-                            <th>Tanggal Masuk</th> {{-- ✅ UBAH DARI "Satuan" --}}
+                            <th>Tanggal Masuk</th>
                             <th>FSN</th>
                             <th>Harga Beli</th>
                             <th>Harga Jual</th>
@@ -219,7 +303,6 @@
                             <td data-label="Stok">
                                 <span class="stock-number">{{ $item->stok }}</span>
                             </td>
-                            {{-- ✅ UBAH DARI SATUAN KE TANGGAL MASUK --}}
                             <td data-label="Tanggal Masuk">
                                 {{ $item->tanggal_masuk ? $item->tanggal_masuk->format('d/m/Y') : '-' }}
                             </td>
@@ -295,6 +378,31 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+
+            {{-- ============================================================
+                 FSN LEGEND
+            ============================================================ --}}
+            <div class="fsn-legend">
+                <span class="fsn-legend-title"><i class="fas fa-info-circle" style="color:#3b82f6; margin-right:5px;"></i>Keterangan FSN:</span>
+                <div class="fsn-legend-items">
+                    <div class="fsn-legend-item">
+                        <span class="fsn-legend-badge f">F</span>
+                        <span><strong>Fast Moving</strong> <span class="fsn-legend-desc">— Barang dengan perputaran cepat / laku terjual rutin</span></span>
+                    </div>
+                    <div class="fsn-legend-item">
+                        <span class="fsn-legend-badge s">S</span>
+                        <span><strong>Slow Moving</strong> <span class="fsn-legend-desc">— Barang dengan perputaran lambat / jarang terjual</span></span>
+                    </div>
+                    <div class="fsn-legend-item">
+                        <span class="fsn-legend-badge n">N</span>
+                        <span><strong>Non Moving</strong> <span class="fsn-legend-desc">— Barang tidak bergerak / tidak terjual dalam periode tertentu</span></span>
+                    </div>
+                    <div class="fsn-legend-item">
+                        <span class="fsn-legend-badge na">NA</span>
+                        <span><strong>Not Analyzed</strong> <span class="fsn-legend-desc">— Barang belum berumur 30 hari, data belum cukup untuk dianalisis</span></span>
+                    </div>
+                </div>
             </div>
 
             {{-- ============================================================
@@ -442,7 +550,7 @@
                                 required>
                         </div>
 
-                        {{-- ✅ TAMBAHKAN INPUT SATUAN (karena masih dibutuhkan di database) --}}
+                        {{-- Satuan --}}
                         <div class="form-group">
                             <label for="satuan">Satuan <span style="color: red;">*</span></label>
                             <input
@@ -471,8 +579,6 @@
                                 autocomplete="off"
                                 required>
                         </div>
-
-                        {{-- ✅ HAPUS INPUT DISKON dari form tambah (diskon otomatis dari FSN) --}}
 
                         {{-- Footer --}}
                         <div class="modal-footer-custom">
@@ -596,7 +702,7 @@
                                 required>
                         </div>
 
-                        {{-- ✅ TAMBAHKAN INPUT SATUAN di form edit --}}
+                        {{-- Satuan --}}
                         <div class="form-group">
                             <label for="satuan{{ $item->id_produk }}">Satuan <span style="color: red;">*</span></label>
                             <input
